@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}예약 관리{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1 class="section-title mb-1">예약 관리</h1>
+    <p class="section-desc">예약대기 → 예약확정 전환과 엑셀 다운로드를 지원합니다.</p>
+  </div>
+  <a href="{{ url_for('admin.export_reservations') }}" class="btn btn-success">엑셀 다운로드</a>
+</div>
+<div class="surface-card p-3 p-lg-4 reservation-manage-card">
+    <div class="table-responsive">
+      <table class="table table-modern align-middle reservation-table text-nowrap">
+        <thead>
+          <tr>
+            <th>예약월</th><th>이름</th><th>동</th><th>호수</th><th>연락처</th><th>아이수</th><th>상태</th><th>입금토글</th><th>입금확인일</th><th>신청일시</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for reservation in reservations %}
+          <tr>
+            <td>{{ reservation.month.target_month }}</td>
+            <td>{{ reservation.name }}</td>
+            <td>{{ reservation.apt_dong }}</td>
+            <td>{{ reservation.apt_ho }}</td>
+            <td>{{ reservation.phone }}</td>
+            <td>{{ reservation.children_count }}</td>
+            <td><span class="status-badge status-{{ reservation.status|lower }}">{{ reservation.status_label }}</span></td>
+            <td>
+              <form method="post" action="{{ url_for('admin.toggle_reservation_payment', reservation_id=reservation.id) }}" class="m-0">
+                <input type="hidden" name="current_status" value="{{ reservation.status }}">
+                <button type="submit" class="payment-toggle {% if reservation.payment_checked %}is-on{% else %}is-off{% endif %}">
+                  <span class="payment-toggle-knob"></span>
+                  <span class="payment-toggle-label">{{ '입금확인' if reservation.payment_checked else '입금대기' }}</span>
+                </button>
+              </form>
+            </td>
+            <td>{{ reservation.payment_confirmed_at_display or '-' }}</td>
+            <td>{{ reservation.created_at_display or '-' }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="10" class="text-center text-muted">예약 내역이 없습니다.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+</div>
+{% endblock %}
