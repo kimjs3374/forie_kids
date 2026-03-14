@@ -1,7 +1,7 @@
 from flask import flash, redirect, render_template, url_for
 
 from ...forms import NoticeForm, TickerMessageForm
-from ...services.admin import list_months, list_reservations, list_ticker_messages, save_notice
+from ...services.admin import get_bank_dashboard_summary, list_months, list_reservations, list_ticker_messages, save_notice
 from ...services.reservation import get_notice_text
 from . import admin_bp
 from .decorators import login_required
@@ -25,6 +25,7 @@ def dashboard():
     ticker_messages = list_ticker_messages()
     return render_template(
         "admin/dashboard.html",
+        bank_summary=get_bank_dashboard_summary(),
         notice_form=notice_form,
         ticker_form=ticker_form,
         ticker_messages=ticker_messages,

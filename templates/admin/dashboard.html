@@ -25,6 +25,22 @@
   </div>
   <div class="col-lg-6">
     <div class="surface-card p-4 mb-4">
+      <h2 class="section-title mb-1">자동 입금 확인 현황</h2>
+      <p class="section-desc mb-3">BankAPI 기반 입금 수집/매칭 현황입니다.</p>
+      <div class="row g-3">
+        <div class="col-6 col-md-4"><div class="hero-stat"><div class="hero-stat-label">은행연동</div><div class="hero-stat-value">{{ '활성' if bank_summary.is_enabled else '비활성' }}</div></div></div>
+        <div class="col-6 col-md-4"><div class="hero-stat"><div class="hero-stat-label">자동매칭</div><div class="hero-stat-value">{{ bank_summary.matched_count }}</div></div></div>
+        <div class="col-6 col-md-4"><div class="hero-stat"><div class="hero-stat-label">미매칭</div><div class="hero-stat-value">{{ bank_summary.unmatched_count }}</div></div></div>
+      </div>
+      <div class="small text-muted mt-3">최근 동기화: {{ bank_summary.last_synced_at_display or '없음' }}</div>
+      {% if bank_summary.last_error_message %}
+      <div class="alert alert-warning mt-3 mb-0">최근 오류: {{ bank_summary.last_error_message }}</div>
+      {% endif %}
+      <div class="mt-3">
+        <a class="btn btn-outline-primary" href="{{ url_for('admin.bank_management') }}">은행 연동 관리 열기</a>
+      </div>
+    </div>
+    <div class="surface-card p-4 mb-4">
       <h2 class="section-title mb-1">예약현황</h2>
       <p class="section-desc mb-3">예약 월별 정원과 신청/완료 현황을 빠르게 점검하세요.</p>
       <div class="table-responsive mt-3 dashboard-table-wrap">

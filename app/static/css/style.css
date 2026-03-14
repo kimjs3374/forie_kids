@@ -397,9 +397,40 @@ a { text-decoration: none; }
   max-width: 100%;
 }
 
+.match-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: .38rem .7rem;
+  font-size: .78rem;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.match-badge-matched {
+  background: rgba(37, 99, 235, .12);
+  color: #1d4ed8;
+}
+
+.match-badge-partial {
+  background: rgba(245, 158, 11, .14);
+  color: #b45309;
+}
+
+.match-badge-bundle {
+  background: rgba(20, 184, 166, .16);
+  color: #0f766e;
+}
+
 .status-open, .status-active { background: rgba(34, 197, 94, .14); color: #15803d; }
 .status-closed, .status-inactive { background: rgba(239,68,68,.12); color: #b91c1c; }
 .status-draft { background: rgba(245, 158, 11, .14); color: #b45309; }
+.status-pending { background: rgba(59, 130, 246, .12); color: #1d4ed8; }
+.status-matched, .status-success { background: rgba(34, 197, 94, .14); color: #15803d; }
+.status-unmatched, .status-failed { background: rgba(239,68,68,.12); color: #b91c1c; }
+.status-ignored { background: rgba(100, 116, 139, .14); color: #475569; }
+.status-running { background: rgba(59, 130, 246, .12); color: #1d4ed8; }
 .status-pending_payment { background: rgba(245, 158, 11, .14); color: #b45309; }
 .status-payment_confirmed { background: rgba(34, 197, 94, .14); color: #15803d; }
 .status-cancelled { background: rgba(239,68,68,.12); color: #b91c1c; }
@@ -520,6 +551,72 @@ a { text-decoration: none; }
 
 .reservation-manage-card {
   overflow: hidden;
+}
+
+.reservation-table-wrap,
+.bank-table-wrap {
+  overflow-x: visible;
+}
+
+.admin-compact-table {
+  table-layout: fixed;
+}
+
+.admin-compact-table th,
+.admin-compact-table td {
+  white-space: normal !important;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  vertical-align: middle;
+}
+
+.admin-action-stack {
+  display: grid;
+  gap: .45rem;
+}
+
+.admin-record-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.admin-record-card {
+  border: 1px solid var(--forie-border);
+  border-radius: 20px;
+  background: rgba(255,255,255,.92);
+  padding: 1rem 1.1rem;
+}
+
+.admin-record-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: .9rem 1rem;
+}
+
+.admin-record-item {
+  min-width: 0;
+}
+
+.admin-record-item-wide {
+  grid-column: 1 / -1;
+}
+
+.admin-record-label {
+  font-size: .78rem;
+  color: var(--forie-muted);
+  font-weight: 800;
+  margin-bottom: .3rem;
+}
+
+.admin-record-value {
+  font-size: .95rem;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.admin-record-actions {
+  display: grid;
+  gap: .6rem;
 }
 
 .reservation-table {

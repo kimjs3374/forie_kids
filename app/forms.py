@@ -10,7 +10,7 @@ from wtforms import (
     TextAreaField,
 )
 from wtforms.fields import DateField, TimeField
-from wtforms.validators import DataRequired, InputRequired, Length, NumberRange, Regexp, ValidationError
+from wtforms.validators import DataRequired, InputRequired, Length, NumberRange, Optional, Regexp, ValidationError
 
 
 BUILDING_RULES = {
@@ -93,6 +93,9 @@ class MonthForm(FlaskForm):
     title = StringField("제목", validators=[Length(max=100)])
     open_date = DateField("오픈 날짜", validators=[DataRequired()])
     close_date = DateField("마감 날짜", validators=[DataRequired()])
+    payment_amount = IntegerField(
+        "이용금액(원)", validators=[Optional(), NumberRange(min=0, max=10000000)], default=5000
+    )
     capacity = IntegerField(
         "월별 신청 정원", validators=[DataRequired(), NumberRange(min=1, max=9999)], default=100
     )
@@ -164,3 +167,40 @@ class TickerMessageForm(FlaskForm):
     display_seconds = IntegerField("노출시간(초)", validators=[InputRequired(), NumberRange(min=1, max=30)], default=3)
     sort_order = IntegerField("정렬순서", validators=[InputRequired(), NumberRange(min=0, max=999)], default=0)
     submit = SubmitField("전광판 저장")
+
+
+class BankSettingsForm(FlaskForm):
+    bank_code = SelectField(
+        "은행",
+        choices=[
+            ("NH", "농협은행 (NH)"),
+            ("KB", "KB국민은행 (KB)"),
+            ("WR", "우리은행 (WR)"),
+            ("SH", "신한은행 (SH)"),
+            ("HN", "하나은행 (HN)"),
+            ("IBK", "IBK기업은행 (IBK)"),
+        ],
+        validators=[DataRequired()],
+    )
+    account_holder_name = StringField("예금주명", validators=[Length(max=100)])
+    account_number = StringField(
+        "계좌번호",
+        validators=[Optional(), Length(max=30), Regexp(r"^[0-9-]+$", message="계좌번호는 숫자와 하이픈만 입력해주세요.")],
+    )
+    account_password = PasswordField("계좌 비밀번호", validators=[Optional(), Length(max=20)])
+    resident_number = StringField(
+        "생년월일/사업자번호",
+        validators=[Optional(), Length(min=6, max=10), Regexp(r"^[0-9]+$", message="숫자만 입력해주세요.")],
+    )
+    payment_amount = IntegerField(
+        "예약금액(원)", validators=[InputRequired(), NumberRange(min=0, max=10000000)], default=5000
+    )
+    is_active = BooleanField("자동 입금 확인 활성화", default=True)
+    submit = SubmitField("은행 연동 저장")
+
+
+class BankSyncForm(FlaskForm):
+    lookback_days = IntegerField(
+        "최초 조회기간(일)", validators=[InputRequired(), NumberRange(min=1, max=365)], default=30
+    )
+    submit = SubmitField("지금 동기화")

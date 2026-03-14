@@ -13,4 +13,11 @@ def get_active_ticker_messages():
         "ticker_messages",
         params={"select": "*", "is_active": "eq.true", "order": "sort_order.asc,id.asc"},
     )
-    return [item for item in messages if (item.get("content") or "").strip()]
+    active_messages = [item for item in messages if (item.get("content") or "").strip()]
+    try:
+        from ..bank import get_billboard_ticker_messages
+
+        active_messages.extend(get_billboard_ticker_messages())
+    except Exception:
+        pass
+    return active_messages

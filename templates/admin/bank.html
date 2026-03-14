@@ -1,0 +1,269 @@
+{% extends 'base.html' %}
+{% block title %}은행 연동 관리{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+  <div>
+    <h1 class="section-title mb-1">은행 연동 관리</h1>
+    <p class="section-desc">BankAPI 계좌 설정, 거래 동기화, 자동 매칭, 전광판 승인까지 한 화면에서 관리합니다.</p>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    <a href="{{ url_for('admin.bank_management', status='all') }}" class="btn {% if active_filter == 'all' %}btn-primary{% else %}btn-outline-primary{% endif %}">전체 {{ bank_summary.total_transactions }}</a>
+    <a href="{{ url_for('admin.bank_management', status='pending') }}" class="btn {% if active_filter == 'pending' %}btn-primary{% else %}btn-outline-primary{% endif %}">미처리 {{ bank_summary.pending_count }}</a>
+    <a href="{{ url_for('admin.bank_management', status='matched') }}" class="btn {% if active_filter == 'matched' %}btn-primary{% else %}btn-outline-primary{% endif %}">자동매칭 {{ bank_summary.matched_count }}</a>
+    <a href="{{ url_for('admin.bank_management', status='unmatched') }}" class="btn {% if active_filter == 'unmatched' %}btn-primary{% else %}btn-outline-primary{% endif %}">미매칭 {{ bank_summary.unmatched_count }}</a>
+    <a href="{{ url_for('admin.bank_management', status='ignored') }}" class="btn {% if active_filter == 'ignored' %}btn-primary{% else %}btn-outline-primary{% endif %}">무시 {{ bank_summary.ignored_count }}</a>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-lg-5">
+    <div class="surface-card p-4 h-100">
+      <h2 class="section-title mb-1">계좌 연동 설정</h2>
+      <p class="section-desc mb-3">민감 정보는 서버에서 암호화해 저장됩니다.</p>
+      <form method="post" action="{{ url_for('admin.save_bank_settings_route') }}">
+        {{ settings_form.hidden_tag() }}
+        <div class="mb-3">{{ settings_form.bank_code.label(class='form-label') }}{{ settings_form.bank_code(class='form-select') }}</div>
+        <div class="mb-3">{{ settings_form.account_holder_name.label(class='form-label') }}{{ settings_form.account_holder_name(class='form-control', placeholder='예금주명') }}</div>
+        <div class="mb-3">{{ settings_form.payment_amount.label(class='form-label') }}{{ settings_form.payment_amount(class='form-control') }}</div>
+        <div class="mb-3">{{ settings_form.account_number.label(class='form-label') }}{{ settings_form.account_number(class='form-control', placeholder='처음 등록 또는 변경 시 입력') }}</div>
+        <div class="mb-3">{{ settings_form.account_password.label(class='form-label') }}{{ settings_form.account_password(class='form-control', placeholder='비워두면 기존 값 유지') }}</div>
+        <div class="small text-muted mb-3">계좌번호/계좌 비밀번호/생년월일(또는 사업자번호)을 비워두면 기존 암호화 저장 값을 유지합니다.</div>
+        <div class="mb-3">{{ settings_form.resident_number.label(class='form-label') }}{{ settings_form.resident_number(class='form-control', placeholder='처음 등록 또는 변경 시 입력') }}</div>
+        <div class="form-check mb-3">{{ settings_form.is_active(class='form-check-input') }} {{ settings_form.is_active.label(class='form-check-label') }}</div>
+        <button class="btn btn-primary w-100" type="submit">은행 연동 저장</button>
+      </form>
+
+      <div class="border rounded-4 p-3 mt-4 bg-light-subtle">
+        <div class="fw-bold mb-2">현재 저장된 계좌 정보</div>
+        {% if bank_setting %}
+        <div class="small text-muted">은행: {{ bank_setting.bank_name }}</div>
+        <div class="small text-muted">예약금액: {{ '{:,}'.format(bank_setting.payment_amount or 5000) }}원</div>
+        <div class="small text-muted">계좌번호: {{ bank_setting.masked_account_number or '-' }}</div>
+        <div class="small text-muted">생년월일/사업자번호: {{ bank_setting.masked_resident_number or '-' }}</div>
+        <div class="small text-muted">최근 동기화: {{ bank_summary.last_synced_at_display or '없음' }}</div>
+        {% else %}
+        <div class="small text-muted">아직 등록된 은행 계좌가 없습니다.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="surface-card p-4 mb-4">
+      <h2 class="section-title mb-1">수집/매칭 현황</h2>
+      <p class="section-desc mb-3">자동 입금확인 파이프라인 상태입니다.</p>
+      <div class="row g-3">
+        <div class="col-sm-6 col-lg-3"><div class="hero-stat"><div class="hero-stat-label">미처리</div><div class="hero-stat-value">{{ bank_summary.pending_count }}</div></div></div>
+        <div class="col-sm-6 col-lg-3"><div class="hero-stat"><div class="hero-stat-label">자동매칭</div><div class="hero-stat-value">{{ bank_summary.matched_count }}</div></div></div>
+        <div class="col-sm-6 col-lg-3"><div class="hero-stat"><div class="hero-stat-label">미매칭</div><div class="hero-stat-value">{{ bank_summary.unmatched_count }}</div></div></div>
+        <div class="col-sm-6 col-lg-3"><div class="hero-stat"><div class="hero-stat-label">전광판 승인</div><div class="hero-stat-value">{{ bank_summary.approved_billboard_count }}</div></div></div>
+      </div>
+      <div class="small text-muted mt-3">현재 예약금액: {{ bank_summary.payment_amount_display }}</div>
+      {% if bank_summary.last_error_message %}
+      <div class="alert alert-warning mt-3 mb-0">최근 오류: {{ bank_summary.last_error_message }}</div>
+      {% endif %}
+    </div>
+
+    <div class="surface-card p-4">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+        <div>
+          <h2 class="section-title mb-1">즉시 동기화</h2>
+          <p class="section-desc mb-0">02:00~07:00 중지 시간과 무관하게 수동 실행됩니다.</p>
+        </div>
+      </div>
+      <form method="post" action="{{ url_for('admin.sync_bank_transactions_now') }}" class="row g-3 align-items-end">
+        {{ sync_form.hidden_tag() }}
+        <div class="col-sm-4">{{ sync_form.lookback_days.label(class='form-label') }}{{ sync_form.lookback_days(class='form-control') }}</div>
+        <div class="col-sm-4"><button class="btn btn-primary w-100" type="submit">지금 동기화</button></div>
+      </form>
+
+      <div class="mt-4">
+        <h3 class="section-title fs-6 mb-2">최근 동기화 이력</h3>
+        <div class="table-responsive">
+          <table class="table table-modern align-middle mb-0">
+            <thead>
+              <tr><th>시작</th><th>상태</th><th>조회</th><th>적재</th><th>매칭</th><th>미매칭</th></tr>
+            </thead>
+            <tbody>
+              {% for run in sync_runs %}
+              <tr>
+                <td>{{ run.started_at_display or '-' }}</td>
+                <td><span class="status-badge status-{{ run.status|lower }}">{{ run.status }}</span></td>
+                <td>{{ run.fetched_count or 0 }}</td>
+                <td>{{ run.inserted_count or 0 }}</td>
+                <td>{{ run.matched_count or 0 }}</td>
+                <td>{{ run.unmatched_count or 0 }}</td>
+              </tr>
+              {% else %}
+              <tr><td colspan="6" class="text-center text-muted">동기화 이력이 없습니다.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="surface-card p-4">
+  <h2 class="section-title mb-1">은행 거래 관리</h2>
+  <p class="section-desc mb-3">자동 매칭 실패 건을 수동 연결하거나 전광판에 승인할 수 있습니다.</p>
+  <div class="alert alert-info border-0 mb-4">
+    <div class="fw-bold mb-2">자동 매칭은 이렇게 생각하시면 됩니다</div>
+    <ul class="mb-0 ps-3">
+      <li><b>첫째</b>, 입금 금액이 예약 금액과 같아야 합니다.</li>
+      <li><b>둘째</b>, 입금자명과 예약자명이 같아야 합니다. 공백은 빼고 비교합니다.</li>
+      <li><b>셋째</b>, 예약을 한 뒤에 들어온 입금이어야 합니다.</li>
+      <li>이 3가지를 모두 만족하는 예약이 <b>딱 1건</b>이면 자동으로 연결합니다.</li>
+      <li>비슷한 예약이 여러 건이면 잘못 연결될 수 있어서, 자동으로 처리하지 않고 관리자가 직접 확인하도록 남겨둡니다.</li>
+      <li><b>동명이인 처리</b>: 같은 이름의 예약이 여러 건 잡히면, 잘못 연결될 수 있으므로 자동으로 확정하지 않고 <b>미매칭</b>으로 남깁니다. 이 경우 관리자가 수동매칭에서 직접 선택해야 합니다.</li>
+      <li><b>묶음입금 처리</b>: 같은 사람의 입금대기 예약 여러 건을 더한 금액이 실제 입금액과 정확히 같으면, 한 번의 입금으로 여러 예약을 함께 완료 처리할 수 있습니다.</li>
+    </ul>
+  </div>
+  <div class="table-responsive bank-table-wrap">
+    <table class="table table-modern align-middle admin-compact-table mb-0">
+      <thead>
+        <tr>
+          <th style="width: 24%;">거래정보</th>
+          <th style="width: 16%;">상태</th>
+          <th style="width: 22%;">연결예약</th>
+          <th style="width: 20%;">자동매칭 판정</th>
+          <th style="width: 18%;">작업</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for transaction in transactions %}
+        <tr>
+          <td>
+            <div class="fw-semibold">{{ transaction.transaction_date_display or '-' }}</div>
+            <div class="small text-muted">{{ transaction.transaction_type_label }} · {{ transaction.deposit_name or '-' }}</div>
+            <div class="small text-muted">{{ transaction.amount_display }}</div>
+          </td>
+          <td>
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+              <span class="status-badge status-{{ transaction.status|lower }}">{{ transaction.status_label }}</span>
+              {% if transaction.match_badge_label %}
+              <span class="match-badge match-badge-{{ transaction.match_badge_variant }}">{{ transaction.match_badge_label }}</span>
+              {% endif %}
+            </div>
+          </td>
+          <td class="small">
+            {% if transaction.matched_reservation %}
+            <div class="fw-semibold text-primary">#{{ transaction.matched_reservation.id }}</div>
+            <div>{{ transaction.matched_reservation.target_month }} / {{ transaction.matched_reservation.name }}</div>
+            <div class="text-muted">{{ transaction.matched_reservation.apt_unit }}</div>
+            {% else %}
+            <span class="text-muted">연결된 예약 없음</span>
+            {% endif %}
+          </td>
+          <td class="small">
+            <div>{{ transaction.auto_match_note }}</div>
+            {% if transaction.strict_candidate_count %}
+            <div class="text-muted mt-1">엄격 후보 수: {{ transaction.strict_candidate_count }}건</div>
+            {% endif %}
+          </td>
+          <td>
+            <div class="admin-action-stack">
+              {% if transaction.can_manual_match %}
+              <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#manualMatchModal-{{ transaction.id }}">수동매칭</button>
+              {% endif %}
+              {% if transaction.can_approve_billboard %}
+              <form method="post" action="{{ url_for('admin.approve_bank_transaction', transaction_id=transaction.id) }}">
+                <input type="hidden" name="next" value="{{ request.full_path if request.query_string else request.path }}">
+                <input type="hidden" name="approved" value="{{ 'false' if transaction.is_billboard_approved else 'true' }}">
+                <button class="btn btn-sm {% if transaction.is_billboard_approved %}btn-outline-secondary{% else %}btn-outline-warning{% endif %} w-100" type="submit">
+                  {{ '승인해제' if transaction.is_billboard_approved else '전광판승인' }}
+                </button>
+              </form>
+              {% endif %}
+              {% if transaction.can_ignore %}
+              <form method="post" action="{{ url_for('admin.ignore_bank_transaction_route', transaction_id=transaction.id) }}">
+                <input type="hidden" name="next" value="{{ request.full_path if request.query_string else request.path }}">
+                <button class="btn btn-sm btn-outline-danger w-100" type="submit">무시처리</button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-muted py-4">조회된 은행 거래가 없습니다.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% for transaction in transactions if transaction.can_manual_match %}
+  <div class="modal fade" id="manualMatchModal-{{ transaction.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content surface-card border-0">
+        <div class="modal-header border-0 pb-2">
+          <div>
+            <h5 class="modal-title fw-bold mb-1">수동 매칭</h5>
+            <div class="small text-muted">{{ transaction.transaction_date_display or '-' }} / {{ transaction.deposit_name or '-' }} / {{ transaction.amount_display }}</div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+        </div>
+        <div class="modal-body pt-0">
+          {% if transaction.manual_match_options %}
+          <div class="table-responsive">
+            <table class="table table-modern align-middle admin-compact-table mb-0">
+              <thead>
+                <tr>
+                  <th>예약번호</th>
+                  <th>신청자</th>
+                  <th>예약월</th>
+                  <th>금액</th>
+                  <th>신청일시</th>
+                  <th>판정</th>
+                  <th>선택</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for option in transaction.manual_match_options %}
+                <tr>
+                  <td><span class="fw-bold text-primary">#{{ option.id }}</span></td>
+                  <td>
+                    <div class="fw-semibold">{{ option.name }}</div>
+                    <div class="small text-muted">{{ option.apt_dong }}동 {{ option.apt_ho }}호 / {{ option.phone }}</div>
+                  </td>
+                  <td>{{ option.target_month }}</td>
+                  <td>{{ option.expected_amount_display }}</td>
+                  <td class="small">{{ option.created_at_display or '-' }}</td>
+                  <td class="small">
+                    <span class="badge text-bg-light border">{{ option.recommendation_label }}</span>
+                  </td>
+                  <td>
+                    <form method="post" action="{{ url_for('admin.match_bank_transaction_route', transaction_id=transaction.id) }}">
+                      <input type="hidden" name="next" value="{{ request.full_path if request.query_string else request.path }}">
+                      <input type="hidden" name="reservation_id" value="{{ option.id }}">
+                      <button class="btn btn-sm btn-primary" type="submit">이 예약에 매칭</button>
+                    </form>
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-muted py-3">현재 입금대기 예약 후보가 없습니다.</div>
+          {% endif %}
+
+          <div class="border-top mt-4 pt-3">
+            <div class="fw-bold mb-2">예약번호 직접 입력</div>
+            <form method="post" action="{{ url_for('admin.match_bank_transaction_route', transaction_id=transaction.id) }}" class="row g-2 align-items-end">
+              <input type="hidden" name="next" value="{{ request.full_path if request.query_string else request.path }}">
+              <div class="col-sm-8">
+                <label class="form-label small text-muted">예약번호</label>
+                <input type="number" name="reservation_id" class="form-control" min="1" placeholder="예: 123" required>
+              </div>
+              <div class="col-sm-4">
+                <button class="btn btn-outline-primary w-100" type="submit">번호로 매칭</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

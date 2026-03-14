@@ -26,6 +26,7 @@
               <div class="flex-grow-1 min-w-0">
                 <div class="fw-bold fs-5 mb-1">{{ month.target_month }}</div>
                 <div class="text-muted small">{{ month.title or '실내놀이터 월별 운영' }}</div>
+                <div class="text-muted small mt-1">이용금액 {{ '{:,}'.format(month.payment_amount or 0) }}원</div>
                 <div class="month-chip-meta-row text-muted small mt-2">
                   <span>신청 <span class="month-chip-strong js-chip-reserved">{{ month.slot_reserved or 0 }}</span>/<span class="js-chip-capacity">{{ month.slot_capacity or 0 }}</span></span>
                   <span class="month-chip-divider">·</span>
@@ -56,7 +57,7 @@
       <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
         <div>
           <h2 class="section-title mb-1 js-slot-section-title">{{ selected_month.target_month }} 이용 안내</h2>
-          <p class="section-desc">이용 신청 후 입금 확인이 완료되면 해당 월은 날짜별 추가 예약 없이 이용 가능합니다.</p>
+          <p class="section-desc">이용 신청 후 입금 확인이 완료되면 해당 월은 날짜별 추가 예약 없이 이용 가능합니다. 이용금액은 {{ '{:,}'.format(selected_month.payment_amount or 0) }}원입니다.</p>
         </div>
         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#reservationApplyModal" {% if reservation_disabled %}disabled{% endif %}>예약 신청하기</button>
       </div>

@@ -3,6 +3,7 @@ from datetime import datetime
 from flask import flash, redirect, render_template, request, url_for
 
 from ...forms import MonthForm
+from ...services.bank import get_configured_payment_amount
 from ...services.admin import create_month, delete_month, list_months, update_month
 from . import admin_bp
 from .decorators import login_required
@@ -13,10 +14,12 @@ from .helpers import _build_month_year_choices
 @login_required
 def months():
     month_list = list_months()
+    bank_payment_amount = get_configured_payment_amount()
     form = MonthForm()
     form.target_year.choices, form.target_month_num.choices = _build_month_year_choices(month_list)
     if request.method == "GET":
         form.target_year.data = datetime.now().year
+        form.payment_amount.data = bank_payment_amount
     if form.validate_on_submit():
         try:
             create_month(form)
@@ -25,7 +28,7 @@ def months():
         except Exception as exc:
             flash(f"예약 월 생성 실패: {exc}", "danger")
 
-    return render_template("admin/months.html", form=form, months=month_list)
+    return render_template("admin/months.html", form=form, months=month_list, bank_payment_amount=bank_payment_amount)
 
 
 @admin_bp.route("/months/<int:month_id>/edit", methods=["POST"])
@@ -34,6 +37,7 @@ def edit_month(month_id):
     month_list = list_months()
     form = MonthForm()
     form.target_year.choices, form.target_month_num.choices = _build_month_year_choices(month_list)
+    form.payment_amount.data = get_configured_payment_amount()
     if form.validate_on_submit():
         try:
             update_month(month_id, form)

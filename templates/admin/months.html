@@ -6,6 +6,7 @@
     <div class="surface-card p-4">
         <h1 class="section-title mb-1">예약 생성</h1>
         <p class="section-desc small">매월 1일에는 다음달 예약이 자동 생성되며, 비밀번호는 항상 중복 없는 4자리 랜덤 숫자로 생성됩니다.</p>
+        <div class="alert alert-info border-0 mb-3">현재 예약금액은 <b>{{ '{:,}'.format(bank_payment_amount) }}원</b>이며, <b>은행연동</b> 화면에서 변경합니다.</div>
         <form method="post">
           {{ form.hidden_tag() }}
           <div class="row g-3 mb-3">

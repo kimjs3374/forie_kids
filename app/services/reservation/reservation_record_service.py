@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 
 from flask import current_app
 
+from ..bank.settings_service import get_configured_payment_amount
 from ..shared import build_apt_unit, format_kst_datetime, is_month_open, split_apt_unit, status_label
 from ..supabase_service import fetch_rows, insert_row
 from .month_service import get_months_with_slots
@@ -57,6 +58,7 @@ def create_reservation(form):
             "apt_unit": apt_unit,
             "phone": phone,
             "children_count": form.children_count.data,
+            "expected_amount": int((month or {}).get("payment_amount") or get_configured_payment_amount()),
             "consent_agreed": bool(form.consent_agreed.data),
             "consent_agreed_at": now if form.consent_agreed.data else None,
             "status": "PENDING_PAYMENT",
@@ -95,6 +97,7 @@ def lookup_my_reservations(name, phone, apt_dong, apt_ho):
         reservation["apt_ho"] = ho
         reservation["status_label"] = status_label(reservation.get("status"))
         reservation["payment_checked"] = reservation.get("status") == "PAYMENT_CONFIRMED"
+        reservation["expected_amount_display"] = f"{int(reservation.get('expected_amount') or 0):,}원"
         reservation["payment_confirmed_at_display"] = format_kst_datetime(reservation.get("payment_confirmed_at"))
         reservation["created_at_display"] = format_kst_datetime(reservation.get("created_at"))
         result.append(reservation)

@@ -13,7 +13,18 @@ def save_notice(notice_text):
 
 
 def list_ticker_messages():
-    return fetch_rows("ticker_messages", params={"select": "*", "order": "sort_order.asc,id.asc"})
+    messages = [
+        {**item, "source_type": "MANUAL"}
+        for item in fetch_rows("ticker_messages", params={"select": "*", "order": "sort_order.asc,id.asc"})
+    ]
+    try:
+        from ..bank.billboard_service import get_billboard_manage_messages
+
+        messages.extend(get_billboard_manage_messages())
+    except Exception:
+        pass
+    messages.sort(key=lambda item: (int(item.get("sort_order") or 0), str(item.get("id") or "")))
+    return messages
 
 
 def create_ticker_message(form):

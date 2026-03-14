@@ -22,6 +22,7 @@ def list_reservations():
         reservation["apt_dong"] = dong
         reservation["apt_ho"] = ho
         reservation["payment_checked"] = reservation.get("status") == "PAYMENT_CONFIRMED"
+        reservation["expected_amount_display"] = f"{int(reservation.get('expected_amount') or 0):,}원"
         reservation["payment_confirmed_at_display"] = format_kst_datetime(reservation.get("payment_confirmed_at"))
         reservation["created_at_display"] = format_kst_datetime(reservation.get("created_at"))
     return reservations

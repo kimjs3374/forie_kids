@@ -4,11 +4,15 @@ from datetime import datetime, timedelta, timezone
 KST = timezone(timedelta(hours=9))
 
 
+def _normalize_datetime_text(value):
+    return str(value or "").strip().replace("Z", "+00:00").replace("/", "-")
+
+
 def format_kst_datetime(value):
     if not value:
         return ""
     try:
-        dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        dt = datetime.fromisoformat(_normalize_datetime_text(value))
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=timezone.utc)
         return dt.astimezone(KST).strftime("%Y-%m-%d %H:%M")
@@ -20,7 +24,7 @@ def parse_iso_datetime(value):
     if not value:
         return None
     try:
-        dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        dt = datetime.fromisoformat(_normalize_datetime_text(value))
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=timezone.utc)
         return dt.astimezone(timezone.utc)
@@ -32,7 +36,7 @@ def parse_iso_date(value):
     if not value:
         return None
     try:
-        dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        dt = datetime.fromisoformat(_normalize_datetime_text(value))
         return dt.date()
     except Exception:
         return None

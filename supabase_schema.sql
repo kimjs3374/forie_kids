@@ -92,11 +92,100 @@ create table if not exists public.ticker_messages (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.bank_settings (
+  id bigint generated always as identity primary key,
+  bank_code varchar(20) not null,
+  account_holder_name varchar(100) null,
+  payment_amount integer not null default 5000,
+  account_number_encrypted text not null,
+  account_password_encrypted text not null,
+  resident_number_encrypted text not null,
+  is_active boolean not null default false,
+  account_registered_at timestamptz null,
+  last_synced_at timestamptz null,
+  sync_cursor_at timestamptz null,
+  last_error_message text null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.bank_transactions (
+  id bigint generated always as identity primary key,
+  bank_setting_id bigint null references public.bank_settings(id) on delete set null,
+  bank_code varchar(20) null,
+  transaction_uid varchar(128) not null unique,
+  deposit_name varchar(100) null,
+  amount integer not null default 0,
+  transaction_date timestamptz null,
+  description varchar(100) null,
+  display_name varchar(100) null,
+  counterparty varchar(100) null,
+  balance bigint null,
+  transaction_type varchar(20) not null default 'deposit',
+  status varchar(20) not null default 'PENDING',
+  matched_reservation_id bigint null references public.reservations(id) on delete set null,
+  matched_at timestamptz null,
+  is_billboard_approved boolean not null default false,
+  billboard_posted_at timestamptz null,
+  raw_json jsonb null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.bank_sync_runs (
+  id bigint generated always as identity primary key,
+  bank_setting_id bigint null references public.bank_settings(id) on delete set null,
+  started_at timestamptz not null default now(),
+  finished_at timestamptz null,
+  status varchar(20) not null default 'RUNNING',
+  requested_from date null,
+  requested_to date null,
+  fetched_count integer not null default 0,
+  inserted_count integer not null default 0,
+  matched_count integer not null default 0,
+  unmatched_count integer not null default 0,
+  error_message text null
+);
+
+create table if not exists public.bank_match_logs (
+  id bigint generated always as identity primary key,
+  transaction_id bigint not null references public.bank_transactions(id) on delete cascade,
+  reservation_id bigint null references public.reservations(id) on delete set null,
+  match_type varchar(20) not null,
+  result varchar(20) not null,
+  reason text null,
+  created_by_admin_id bigint null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_bank_transactions_status_date on public.bank_transactions(status, transaction_date desc);
+create index if not exists idx_bank_transactions_reservation on public.bank_transactions(matched_reservation_id);
+create index if not exists idx_bank_sync_runs_started_at on public.bank_sync_runs(started_at desc);
+
+alter table public.bank_settings
+  add column if not exists payment_amount integer not null default 5000;
+
 alter table public.reservations
   add column if not exists payment_confirmed_at timestamptz null;
 
 alter table public.reservations
   add column if not exists consent_agreed_at timestamptz null;
+
+alter table public.reservation_months
+  add column if not exists payment_amount integer not null default 0;
+
+alter table public.reservations
+  add column if not exists expected_amount integer not null default 0;
+
+update public.reservation_months
+set payment_amount = 0
+where payment_amount is null;
+
+update public.reservations r
+set expected_amount = coalesce(m.payment_amount, 0)
+from public.reservation_months m
+where r.month_id = m.id
+  and coalesce(r.expected_amount, 0) = 0;
 
 update public.reservations
 set consent_agreed_at = created_at

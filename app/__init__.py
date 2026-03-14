@@ -3,6 +3,7 @@ from flask import Flask
 
 from config import Config
 from .services.admin import ensure_next_month_reservation
+from .services.bank import sync_bank_transactions
 from .services.cleanup import delete_expired_personal_data
 
 
@@ -34,9 +35,27 @@ def create_app():
             f"cutoff={summary['cutoff']} "
             f"reservations_deleted={summary['reservations_deleted']} "
             f"deposit_requests_deleted={summary['deposit_requests_deleted']} "
-            f"deposit_request_messages_deleted={summary['deposit_request_messages_deleted']}"
+            f"deposit_request_messages_deleted={summary['deposit_request_messages_deleted']} "
+            f"bank_transactions_deleted={summary.get('bank_transactions_deleted', 0)} "
+            f"bank_sync_runs_deleted={summary.get('bank_sync_runs_deleted', 0)}"
         )
         if summary["errors"]:
             raise click.ClickException("; ".join(summary["errors"]))
+
+    @app.cli.command("sync-bank-transactions")
+    @click.option("--lookback-days", default=30, show_default=True, type=int)
+    @click.option("--force", is_flag=True, help="호출 중지 시간대에도 강제로 동기화합니다.")
+    def sync_bank_transactions_command(lookback_days, force):
+        """Sync bank transactions from BankAPI and auto-match reservations."""
+        summary = sync_bank_transactions(force=force, lookback_days=lookback_days)
+        click.echo(
+            "bank sync completed | "
+            f"status={summary['status']} "
+            f"reason={summary['reason']} "
+            f"fetched={summary['fetched_count']} "
+            f"inserted={summary['inserted_count']} "
+            f"matched={summary['matched_count']} "
+            f"unmatched={summary['unmatched_count']}"
+        )
 
     return app

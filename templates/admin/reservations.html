@@ -22,40 +22,52 @@
   </div>
 </div>
 <div class="surface-card p-3 p-lg-4 reservation-manage-card">
-    <div class="table-responsive">
-      <table class="table table-modern align-middle reservation-table text-nowrap">
-        <thead>
-          <tr>
-            <th>예약월</th><th>이름</th><th>동</th><th>호수</th><th>연락처</th><th>아이수</th><th>상태</th><th>입금토글</th><th>입금확인일</th><th>신청일시</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for reservation in reservations %}
-          <tr>
-            <td>{{ reservation.month.target_month }}</td>
-            <td>{{ reservation.name }}</td>
-            <td>{{ reservation.apt_dong }}</td>
-            <td>{{ reservation.apt_ho }}</td>
-            <td>{{ reservation.phone }}</td>
-            <td>{{ reservation.children_count }}</td>
-            <td><span class="status-badge status-{{ reservation.status|lower }}">{{ reservation.status_label }}</span></td>
-            <td>
-              <form method="post" action="{{ url_for('admin.toggle_reservation_payment', reservation_id=reservation.id) }}" class="m-0">
-                <input type="hidden" name="current_status" value="{{ reservation.status }}">
-                <button type="submit" class="payment-toggle {% if reservation.payment_checked %}is-on{% else %}is-off{% endif %}">
-                  <span class="payment-toggle-knob"></span>
-                  <span class="payment-toggle-label">{{ '입금확인' if reservation.payment_checked else '입금대기' }}</span>
-                </button>
-              </form>
-            </td>
-            <td>{{ reservation.payment_confirmed_at_display or '-' }}</td>
-            <td>{{ reservation.created_at_display or '-' }}</td>
-          </tr>
-          {% else %}
-          <tr><td colspan="10" class="text-center text-muted">예약 내역이 없습니다.</td></tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+  <div class="table-responsive reservation-table-wrap">
+    <table class="table table-modern align-middle admin-compact-table mb-0">
+      <thead>
+        <tr>
+          <th style="width: 12%;">예약번호</th>
+          <th style="width: 36%;">신청정보</th>
+          <th style="width: 18%;">금액 / 상태</th>
+          <th style="width: 16%;">입금토글</th>
+          <th style="width: 18%;">일시</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for reservation in reservations %}
+        <tr>
+          <td>
+            <div class="fw-bold text-primary">#{{ reservation.id }}</div>
+            <div class="small text-muted">{{ reservation.month.target_month }}</div>
+          </td>
+          <td>
+            <div class="fw-semibold">{{ reservation.name }}</div>
+            <div class="small text-muted">{{ reservation.apt_dong }}동 {{ reservation.apt_ho }}호 · {{ reservation.phone }}</div>
+            <div class="small text-muted">아이수 {{ reservation.children_count }}명</div>
+          </td>
+          <td>
+            <div class="fw-semibold">{{ reservation.expected_amount_display }}</div>
+            <div class="mt-2"><span class="status-badge status-{{ reservation.status|lower }}">{{ reservation.status_label }}</span></div>
+          </td>
+          <td>
+            <form method="post" action="{{ url_for('admin.toggle_reservation_payment', reservation_id=reservation.id) }}" class="m-0">
+              <input type="hidden" name="current_status" value="{{ reservation.status }}">
+              <button type="submit" class="payment-toggle {% if reservation.payment_checked %}is-on{% else %}is-off{% endif %}">
+                <span class="payment-toggle-knob"></span>
+                <span class="payment-toggle-label">{{ '입금확인' if reservation.payment_checked else '입금대기' }}</span>
+              </button>
+            </form>
+          </td>
+          <td class="small">
+            <div>입금확인: {{ reservation.payment_confirmed_at_display or '-' }}</div>
+            <div class="text-muted mt-1">신청일시: {{ reservation.created_at_display or '-' }}</div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-muted py-4">예약 내역이 없습니다.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
 {% endblock %}

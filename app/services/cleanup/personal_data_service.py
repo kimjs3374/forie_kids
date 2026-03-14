@@ -21,7 +21,7 @@ def _parse_timestamp(value):
     if not value:
         return None
     try:
-        dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        dt = datetime.fromisoformat(str(value).replace("Z", "+00:00").replace("/", "-"))
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=timezone.utc)
         return dt.astimezone(timezone.utc)
@@ -33,7 +33,7 @@ def _parse_date(value):
     if not value:
         return None
     try:
-        return date.fromisoformat(str(value))
+        return date.fromisoformat(str(value).replace("/", "-"))
     except Exception:
         return None
 
@@ -116,6 +116,26 @@ def _collect_expired_deposit_message_ids(cutoff_dt, expired_request_ids):
     return list(message_ids)
 
 
+def _collect_expired_bank_transaction_ids(cutoff_dt):
+    rows = fetch_rows("bank_transactions", params={"select": "id,created_at"})
+    expired_ids = []
+    for row in rows:
+        created_at = _parse_timestamp(row.get("created_at"))
+        if created_at and created_at < cutoff_dt:
+            expired_ids.append(row["id"])
+    return expired_ids
+
+
+def _collect_expired_bank_sync_run_ids(cutoff_dt):
+    rows = fetch_rows("bank_sync_runs", params={"select": "id,started_at"})
+    expired_ids = []
+    for row in rows:
+        started_at = _parse_timestamp(row.get("started_at"))
+        if started_at and started_at < cutoff_dt:
+            expired_ids.append(row["id"])
+    return expired_ids
+
+
 def delete_expired_personal_data(retention_months=None):
     logger = _logger()
     retention_months = int(
@@ -131,6 +151,8 @@ def delete_expired_personal_data(retention_months=None):
         "reservations_deleted": 0,
         "deposit_requests_deleted": 0,
         "deposit_request_messages_deleted": 0,
+        "bank_transactions_deleted": 0,
+        "bank_sync_runs_deleted": 0,
         "errors": [],
     }
 
@@ -164,14 +186,40 @@ def delete_expired_personal_data(retention_months=None):
         logger.exception("개인정보 정리 - deposit requests 삭제 중 오류가 발생했습니다.")
         summary["errors"].append(f"deposit requests cleanup failed: {exc}")
 
+    try:
+        expired_bank_transaction_ids = _collect_expired_bank_transaction_ids(cutoff_dt)
+        summary["bank_transactions_deleted"] = _delete_rows_by_ids("bank_transactions", expired_bank_transaction_ids)
+        logger.info(
+            "개인정보 정리 - bank transactions 삭제 완료 | cutoff=%s deleted=%s",
+            summary["cutoff"],
+            summary["bank_transactions_deleted"],
+        )
+    except Exception as exc:
+        logger.exception("개인정보 정리 - bank transactions 삭제 중 오류가 발생했습니다.")
+        summary["errors"].append(f"bank transactions cleanup failed: {exc}")
+
+    try:
+        expired_bank_sync_run_ids = _collect_expired_bank_sync_run_ids(cutoff_dt)
+        summary["bank_sync_runs_deleted"] = _delete_rows_by_ids("bank_sync_runs", expired_bank_sync_run_ids)
+        logger.info(
+            "개인정보 정리 - bank sync runs 삭제 완료 | cutoff=%s deleted=%s",
+            summary["cutoff"],
+            summary["bank_sync_runs_deleted"],
+        )
+    except Exception as exc:
+        logger.exception("개인정보 정리 - bank sync runs 삭제 중 오류가 발생했습니다.")
+        summary["errors"].append(f"bank sync runs cleanup failed: {exc}")
+
     if summary["errors"]:
         logger.error("개인정보 정리 작업이 일부 실패했습니다. errors=%s", summary["errors"])
     else:
         logger.info(
-            "개인정보 정리 작업 완료 | reservations_deleted=%s deposit_requests_deleted=%s deposit_request_messages_deleted=%s",
+            "개인정보 정리 작업 완료 | reservations_deleted=%s deposit_requests_deleted=%s deposit_request_messages_deleted=%s bank_transactions_deleted=%s bank_sync_runs_deleted=%s",
             summary["reservations_deleted"],
             summary["deposit_requests_deleted"],
             summary["deposit_request_messages_deleted"],
+            summary["bank_transactions_deleted"],
+            summary["bank_sync_runs_deleted"],
         )
 
     return summary

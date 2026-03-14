@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 
 def _to_utc_datetime(value):
-    dt = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    dt = datetime.fromisoformat(str(value).replace("Z", "+00:00").replace("/", "-"))
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(timezone.utc)
@@ -12,6 +12,10 @@ def status_label(status):
     return {
         "ACTIVE": "사용가능",
         "INACTIVE": "비활성",
+        "PENDING": "미처리",
+        "MATCHED": "자동매칭",
+        "UNMATCHED": "미매칭",
+        "IGNORED": "무시됨",
         "PENDING_PAYMENT": "예약대기",
         "PAYMENT_CONFIRMED": "예약완료",
         "CANCELLED": "취소",
