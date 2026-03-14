@@ -1,0 +1,1 @@
+from .personal_data_service import delete_expired_personal_data

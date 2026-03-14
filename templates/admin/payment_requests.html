@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}입금확인요청 관리{% endblock %}
+{% block content %}
+<div class="surface-card p-4">
+  <div class="mb-4">
+    <h1 class="section-title mb-1">입금확인요청 관리</h1>
+    <p class="section-desc">사용자가 남긴 입금확인요청과 관리자 답변을 게시판처럼 누적 관리합니다.</p>
+  </div>
+  {% if threads %}
+    {% for thread in threads|sort(attribute='latest_message_at', reverse=True) %}
+    {% set current_open_thread = open_thread_id if open_thread_id is defined and open_thread_id else request.args.get('open_thread') %}
+    {% set is_open = current_open_thread == (thread.id|string) %}
+    <div class="request-thread mb-4">
+      <button class="request-thread-header request-thread-toggle mb-0 w-100 text-start" type="button" data-bs-toggle="collapse" data-bs-target="#payment-thread-{{ thread.id }}" aria-expanded="{{ 'true' if is_open else 'false' }}" aria-controls="payment-thread-{{ thread.id }}">
+        <div>
+          <div class="fw-bold">{{ thread.apt_dong }}동 {{ thread.apt_ho }}호 / {{ thread.name }} / {{ thread.phone }}</div>
+          <div class="small text-muted">최근 업데이트: {{ thread.latest_message_at_display or '-' }}</div>
+        </div>
+        <span class="status-badge status-{{ thread.status|lower }}">{{ thread.status_label }}</span>
+      </button>
+      <div class="collapse mt-3 {% if is_open %}show{% endif %}" id="payment-thread-{{ thread.id }}">
+        <form method="post" action="{{ url_for('admin.reply_payment_request') }}" class="request-reply-form mb-3">
+          {{ reply_form.csrf_token }}
+          <input type="hidden" name="thread_id" value="{{ thread.id }}">
+          <div class="d-flex gap-2 align-items-start">
+            <textarea name="content" class="form-control flex-grow-1" rows="2" placeholder="답변 내용을 입력하세요." required style="min-height: 64px;"></textarea>
+            <button class="btn btn-sm btn-primary" type="submit" style ="width:10%; min-height: 64px;">답변 등록</button>
+          </div>
+        </form>
+        {% for message in thread.messages|sort(attribute='created_at', reverse=True) %}
+        <div class="request-message {{ 'is-admin' if message.author_type == 'ADMIN' else 'is-user' }}">
+          <div class="request-message-meta">
+            <strong>{{ '관리자 답변' if message.author_type == 'ADMIN' else '사용자 요청' }}</strong>
+            <span>{{ message.created_at_display or '-' }}</span>
+          </div>
+          <div>{{ message.content|replace('\n', '<br>')|safe }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+  <div class="text-muted">접수된 입금확인요청이 없습니다.</div>
+  {% endif %}
+</div>
+{% endblock %}

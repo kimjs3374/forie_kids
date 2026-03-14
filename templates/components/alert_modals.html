@@ -1,0 +1,59 @@
+{% if submitted %}
+<div class="modal fade show" id="submitDoneModal" tabindex="-1" style="display:block; background: rgba(15,23,42,.45);" aria-modal="true" role="dialog">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content surface-card border-0">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold">이용 신청이 접수되었습니다</h5>
+        <a href="{{ url_for('main.index', month_id=selected_month.id if selected_month else None) }}" class="btn-close"></a>
+      </div>
+      <div class="modal-body">
+        <p class="mb-2">신청 상태는 <strong>예약대기</strong>로 등록되었습니다.</p>
+        <p class="mb-0 text-muted">입금 확인이 완료되면 내 신청 조회 페이지에서 <strong>예약완료</strong> 및 입금확인일을 확인할 수 있습니다.</p>
+      </div>
+      <div class="modal-footer border-0">
+        <a href="{{ url_for('main.lookup') }}" class="btn btn-outline-primary">내 신청 조회</a>
+        <a href="{{ url_for('main.index', month_id=selected_month.id if selected_month else None) }}" class="btn btn-primary">확인</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if apt_validation_error %}
+<div class="modal fade show" id="aptValidationModal" tabindex="-1" style="display:block; background: rgba(15,23,42,.45);" aria-modal="true" role="dialog">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content surface-card border-0">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold">동/호수 입력 오류</h5>
+        <a href="{{ url_for('main.index', month_id=selected_month.id if selected_month else None) }}" class="btn-close"></a>
+      </div>
+      <div class="modal-body">
+        <p class="mb-0">{{ apt_validation_error }}</p>
+      </div>
+      <div class="modal-footer border-0">
+        <a href="{{ url_for('main.index', month_id=selected_month.id if selected_month else None) }}" class="btn btn-primary">확인</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="modal fade" id="usageGuideModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content surface-card border-0">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold">이용 신청 안내</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+      </div>
+      <div class="modal-body pt-0">
+        <ol class="ps-3 mb-0 text-muted">
+          <li class="mb-2">원하는 월을 선택한 뒤 이용 신청서를 작성합니다.</li>
+          <li class="mb-2">신청 후 관리사무소 입금 확인이 완료되면 상태가 <strong>예약확인</strong>으로 변경됩니다.</li>
+          <li class="mb-2">입금확인 완료 시 해당 월에는 날짜 제한 없이 자유롭게 이용할 수 있습니다.</li>
+          <li>내 신청 조회 페이지에서 현재 상태와 입금확인 여부를 직접 확인할 수 있습니다.</li>
+          <li>실내놀이터 입장 비밀번호는 비밀번호 탭에서 조회가 가능합니다.</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>

@@ -3,56 +3,14 @@
 <div class="app-tabs mb-4">
   <a href="{{ url_for('main.index') }}" class="app-tab is-active">신청하기</a>
   <a href="{{ url_for('main.lookup') }}" class="app-tab">신청조회</a>
+  <a href="{{ url_for('main.payment_request') }}" class="app-tab">입금확인요청</a>
   <a href="{{ url_for('main.password_lookup') }}" class="app-tab">비밀번호</a>
 </div>
 
-<div class="row g-4 align-items-stretch mb-4">
-  <div class="col-12">
-    <div class="hero-card p-4 p-lg-5">
-      <div class="row g-4 align-items-center">
-        <div class="col-lg-7">
-          <span class="hero-badge mb-3">안전하고 편리한 모바일 예약 지원</span>
-          <h1 class="hero-title mb-3">포리에 아파트 어린이 놀이터를<br>간편하게 이용 신청하세요</h1>
-          <p class="hero-desc mb-4">
-            해당 월 이용 신청 후 입금이 확인되면, 그 달에는 날짜 제한 없이 자유롭게 이용할 수 있습니다.
-          </p>
-          <div class="row g-3">
-            <div class="col-sm-4">
-              <div class="hero-stat">
-                <div class="hero-stat-label">예약 방식</div>
-                <div class="hero-stat-value">월 단위 이용 신청</div>
-              </div>
-            </div>
-            <div class="col-sm-4">
-              <div class="hero-stat">
-                <div class="hero-stat-label">접속 환경</div>
-                <div class="hero-stat-value">모바일 최적화</div>
-              </div>
-            </div>
-            <div class="col-sm-4">
-              <div class="hero-stat">
-                <div class="hero-stat-label">운영 정책</div>
-                <div class="hero-stat-value">입금 확인 후 자유 이용</div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="col-lg-5">
-          <div class="notice-banner">
-            <div class="d-flex align-items-center gap-2 mb-2">
-              <span class="section-chip hero-badge mb-0">운영 공지</span>
-            </div>
-            <p class="mb-0 fw-semibold">{{ notice_text }}</p>
-            <button type="button" class="btn btn-sm btn-outline-primary mt-3" data-bs-toggle="modal" data-bs-target="#usageGuideModal">이용 안내 자세히 보기</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
+{% include 'components/ticker_board.html' %}
 
 <div class="row g-4">
-  <div class="col-xl-8">
+  <div class="col-12">
     <div class="surface-card p-4 mb-4 app-mobile-panel">
       <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
         <div>
@@ -61,25 +19,35 @@
         </div>
       </div>
       <div class="row g-3">
-          {% for month in months %}
-          <div class="col-md-6 col-xl-4">
-            <a class="month-chip {% if selected_month and month.id == selected_month.id %}is-active{% endif %}" href="{{ url_for('main.index', month_id=month.id) }}">
-              <div class="d-flex justify-content-between align-items-start gap-2">
-                <div>
-                  <div class="fw-bold fs-5 mb-1">{{ month.target_month }}</div>
-                  <div class="text-muted small">{{ month.title or '어린이 놀이터 월별 운영' }}</div>
-                  <div class="text-muted small mt-1">실시간 신청 {{ month.slots[0].capacity - month.slots[0].remaining_capacity if month.slots else 0 }} / 정원 {{ month.slots[0].capacity if month.slots else 0 }}</div>
-                  {% if month.slots and month.slots[0].remaining_capacity <= 0 %}
-                  <div class="small text-danger fw-bold mt-1">정원 마감</div>
-                  {% endif %}
+        {% for month in months %}
+        <div class="col-md-6 col-xl-4">
+          <a class="month-chip js-month-chip {% if selected_month and month.id == selected_month.id %}is-active{% endif %}" href="{{ url_for('main.index', month_id=month.id) }}" data-month-id="{{ month.id }}">
+            <div class="d-flex justify-content-between align-items-start gap-2">
+              <div class="flex-grow-1 min-w-0">
+                <div class="fw-bold fs-5 mb-1">{{ month.target_month }}</div>
+                <div class="text-muted small">{{ month.title or '실내놀이터 월별 운영' }}</div>
+                <div class="month-chip-meta-row text-muted small mt-2">
+                  <span>신청 <span class="month-chip-strong js-chip-reserved">{{ month.slot_reserved or 0 }}</span>/<span class="js-chip-capacity">{{ month.slot_capacity or 0 }}</span></span>
+                  <span class="month-chip-divider">·</span>
+                  <span>확정 <span class="month-chip-strong js-chip-confirmed">{{ month.slot_confirmed or 0 }}</span>/<span class="js-chip-capacity-secondary">{{ month.slot_capacity or 0 }}</span></span>
                 </div>
-                <span class="status-badge status-{{ month.status|lower }}">{{ month.status_label }}</span>
+                <div class="month-chip-date-stack text-muted small mt-1">
+                  <div>접수시작 <span class="js-chip-open-date">{{ month.open_date_display or '-' }}</span></div>
+                  <div>접수마감 <span class="js-chip-close-date">{{ month.close_date_display or '-' }}</span></div>
+                </div>
+                <div class="month-chip-urgency mt-2 js-chip-urgency{% if not month.urgency_labels %} d-none{% endif %}">
+                  {% for label in month.urgency_labels %}
+                  <span class="urgency-badge{% if label == '정원마감' %} is-danger{% elif label == '정원임박' %} is-warning{% else %} is-deadline{% endif %}">{{ label }}</span>
+                  {% endfor %}
+                </div>
               </div>
-            </a>
-          </div>
-          {% else %}
-            <p class="text-muted mb-0">등록된 예약 월이 없습니다.</p>
-          {% endfor %}
+              <span class="status-badge status-{{ month.status_variant|default('inactive') }}">{{ month.status_label }}</span>
+            </div>
+          </a>
+        </div>
+        {% else %}
+        <p class="text-muted mb-0">등록된 예약 월이 없습니다.</p>
+        {% endfor %}
       </div>
     </div>
 
@@ -87,21 +55,46 @@
     <div class="surface-card p-4">
       <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
         <div>
-          <h2 class="section-title mb-1">{{ selected_month.target_month }} 이용 안내</h2>
+          <h2 class="section-title mb-1 js-slot-section-title">{{ selected_month.target_month }} 이용 안내</h2>
           <p class="section-desc">이용 신청 후 입금 확인이 완료되면 해당 월은 날짜별 추가 예약 없이 이용 가능합니다.</p>
         </div>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#reservationApplyModal" {% if reservation_disabled %}disabled{% endif %}>예약 신청하기</button>
       </div>
       <div class="slot-card">
         <div class="row g-3 align-items-center">
           <div class="col-md-8">
-            <div class="fw-bold fs-5 mb-2">{{ selected_month.target_month }} 월 이용 신청</div>
-            <div class="slot-meta">운영 상태: {{ selected_month.status_label }}</div>
+            <div class="fw-bold fs-5 mb-2 js-slot-hero-title">{{ selected_month.target_month }} 월 이용 신청</div>
+            <div class="slot-meta-row">
+              <div class="slot-meta js-slot-status">운영 상태: {{ selected_month.status_label }}</div>
+              <div class="urgency-badges js-slot-urgency{% if not selected_month.urgency_labels %} d-none{% endif %}">
+                {% for label in selected_month.urgency_labels %}
+                <span class="urgency-badge{% if label == '정원마감' %} is-danger{% elif label == '정원임박' %} is-warning{% else %} is-deadline{% endif %}">{{ label }}</span>
+                {% endfor %}
+              </div>
+            </div>
+            <div class="slot-summary-lines mt-3">
+              <div class="slot-summary-line">
+                <span class="slot-summary-label">실시간 신청</span>
+                <span class="slot-summary-value"><span class="js-slot-reserved">{{ selected_month.slot_reserved or 0 }}</span>/<span class="js-slot-capacity">{{ selected_month.slot_capacity or 0 }}</span></span>
+                <span class="slot-summary-divider">·</span>
+                <span class="slot-summary-label">실시간 확정</span>
+                <span class="slot-summary-value"><span class="js-slot-confirmed">{{ selected_month.slot_confirmed or 0 }}</span>/<span class="js-slot-capacity-secondary">{{ selected_month.slot_capacity or 0 }}</span></span>
+              </div>
+              <div class="slot-summary-line">
+                <span class="slot-summary-label">접수시작</span>
+                <span class="slot-summary-value js-slot-open-date">{{ selected_month.open_date_display or '-' }}</span>
+                <span class="slot-summary-divider">·</span>
+                <span class="slot-summary-label">접수마감</span>
+                <span class="slot-summary-value js-slot-close-date">{{ selected_month.close_date_display or '-' }}</span>
+              </div>
+            </div>
             <div class="small text-muted mt-2">신청 완료 후 관리사무소 입금 확인이 되면 해당 월에는 날짜 지정 없이 이용 가능합니다.</div>
           </div>
           <div class="col-md-4">
             <div class="hero-stat">
-              <div class="hero-stat-label">이용 방식</div>
-              <div class="hero-stat-value">해당 월 자유 이용</div>
+              <div class="hero-stat-label">신청 기간</div>
+              <div class="hero-stat-value hero-stat-value-compact js-slot-period">{{ selected_month.reservation_period_display or '-' }}</div>
+              <div class="small text-muted mt-2">해당 월 자유 이용</div>
             </div>
           </div>
         </div>
@@ -109,91 +102,8 @@
     </div>
     {% endif %}
   </div>
-
-  <div class="col-xl-4">
-    <div class="surface-card p-4 form-panel app-mobile-panel">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <div>
-          <h2 class="section-title mb-1">예약 신청</h2>
-          <p class="section-desc">아래 정보를 입력하면 이용 신청이 접수되며, 초기 상태는 예약대기입니다.</p>
-        </div>
-      </div>
-      <form method="post" class="mt-3">
-          {{ form.hidden_tag() }}
-          {{ form.slot_id() }}
-          <div class="mb-3">
-            {{ form.name.label(class='form-label') }}
-            {{ form.name(class='form-control') }}
-          </div>
-          <div class="row g-3">
-            <div class="col-6">
-              {{ form.apt_dong.label(class='form-label') }}
-              {{ form.apt_dong(class='form-control', placeholder='101') }}
-            </div>
-            <div class="col-6">
-              {{ form.apt_ho.label(class='form-label') }}
-              {{ form.apt_ho(class='form-control', placeholder='1203') }}
-            </div>
-          </div>
-          <div class="mb-3">
-            {{ form.phone.label(class='form-label') }}
-            {{ form.phone(class='form-control', placeholder='010-1234-5678', inputmode='numeric') }}
-          </div>
-          <div class="mb-3">
-            {{ form.children_count.label(class='form-label') }}
-            {{ form.children_count(class='form-control') }}
-          </div>
-          <div class="form-check mb-3">
-            {{ form.consent_agreed(class='form-check-input') }}
-            {{ form.consent_agreed.label(class='form-check-label') }}
-          </div>
-          <div class="small text-muted mb-3">제출 전 신청 월, 동/호수, 연락처를 확인해주세요. 입금 확인 후 해당 월 자유 이용 방식입니다.</div>
-          {{ form.submit(class='btn btn-primary w-100', disabled=(selected_month and selected_month.slots and selected_month.slots[0].remaining_capacity <= 0)) }}
-          {% if selected_month and selected_month.slots and selected_month.slots[0].remaining_capacity <= 0 %}
-          <div class="small text-danger text-center mt-2 fw-bold">현재 신청 정원이 모두 마감되어 신청할 수 없습니다.</div>
-          {% endif %}
-      </form>
-    </div>
-  </div>
 </div>
 
-{% if submitted %}
-<div class="modal fade show" id="submitDoneModal" tabindex="-1" style="display:block; background: rgba(15,23,42,.45);" aria-modal="true" role="dialog">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content surface-card border-0">
-      <div class="modal-header border-0 pb-0">
-        <h5 class="modal-title fw-bold">이용 신청이 접수되었습니다</h5>
-        <a href="{{ url_for('main.index', month_id=selected_month.id if selected_month else None) }}" class="btn-close"></a>
-      </div>
-      <div class="modal-body">
-        <p class="mb-2">신청 상태는 <strong>예약대기</strong>로 등록되었습니다.</p>
-        <p class="mb-0 text-muted">입금 확인이 완료되면 내 신청 조회 페이지에서 <strong>예약완료</strong> 및 입금확인일을 확인할 수 있습니다.</p>
-      </div>
-      <div class="modal-footer border-0">
-        <a href="{{ url_for('main.lookup') }}" class="btn btn-outline-primary">내 신청 조회</a>
-        <a href="{{ url_for('main.index', month_id=selected_month.id if selected_month else None) }}" class="btn btn-primary">확인</a>
-      </div>
-    </div>
-  </div>
-</div>
-{% endif %}
-
-<div class="modal fade" id="usageGuideModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content surface-card border-0">
-      <div class="modal-header border-0">
-        <h5 class="modal-title fw-bold">이용 신청 안내</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
-      </div>
-      <div class="modal-body pt-0">
-        <ol class="ps-3 mb-0 text-muted">
-          <li class="mb-2">원하는 월을 선택한 뒤 이용 신청서를 작성합니다.</li>
-          <li class="mb-2">신청 후 관리사무소 입금 확인이 완료되면 상태가 <strong>입금확인</strong>으로 변경됩니다.</li>
-          <li class="mb-2">입금확인 완료 시 해당 월에는 날짜 제한 없이 자유롭게 이용할 수 있습니다.</li>
-          <li>내 신청 조회 페이지에서 현재 상태와 입금확인 여부를 직접 확인할 수 있습니다.</li>
-        </ol>
-      </div>
-    </div>
-  </div>
-</div>
+{% include 'components/reservation_modal.html' %}
+{% include 'components/alert_modals.html' %}
 {% endblock %}

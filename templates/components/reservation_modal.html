@@ -1,0 +1,52 @@
+{% if selected_month %}
+<div class="modal fade" id="reservationApplyModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content surface-card border-0">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold">{{ selected_month.target_month }} 예약 신청</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+      </div>
+      <div class="modal-body">
+        <form method="post" class="mt-2">
+          {{ form.hidden_tag() }}
+          {{ form.slot_id() }}
+          <div class="mb-3">{{ form.name.label(class='form-label') }}{{ form.name(class='form-control') }}</div>
+          <div class="row g-3">
+            <div class="col-6">{{ form.apt_dong.label(class='form-label') }}{{ form.apt_dong(class='form-control', placeholder='301') }}</div>
+            <div class="col-6">{{ form.apt_ho.label(class='form-label') }}{{ form.apt_ho(class='form-control', placeholder='1203') }}</div>
+          </div>
+          <div class="mb-3">{{ form.phone.label(class='form-label') }}{{ form.phone(class='form-control', placeholder='010-1234-5678', inputmode='numeric') }}</div>
+          <div class="mb-3">{{ form.children_count.label(class='form-label') }}{{ form.children_count(class='form-control') }}</div>
+          <div class="consent-panel mb-3">
+            {{ form.consent_agreed(class='form-check-input d-none js-consent-checkbox') }}
+            <div class="d-flex justify-content-between align-items-center gap-2">
+              <div>
+                <div class="fw-bold small">개인정보 수집 및 이용 동의</div>
+                <div class="small text-muted js-consent-status">상세 내용을 확인하고 동의해주세요.</div>
+              </div>
+              <button type="button" class="btn btn-sm btn-outline-primary js-open-consent-panel" data-consent-target="reservation-consent-detail">동의하기</button>
+            </div>
+            <div class="consent-detail-box mt-3 d-none" id="reservation-consent-detail">
+              <ul class="consent-detail-list mb-3">
+                <li><strong>항목:</strong> 성명, 동/호수, 연락처</li>
+                <li><strong>목적:</strong> 놀이터 예약 및 입금 확인, 예약 상태 알림 발송</li>
+                <li><strong>보유 기간:</strong> 예약 시설 이용 완료 후 12개월</li>
+                <li><strong>동의 거부:</strong> 거부 가능하나 예약 불가</li>
+              </ul>
+              <div class="d-flex justify-content-end">
+                <button type="button" class="btn" data-bs-dismiss="modal">거부</button>
+                <button type="button" class="btn btn-primary btn-sm js-confirm-inline-consent">동의합니다</button>
+              </div>
+            </div>
+          </div>
+          <div class="small text-muted mb-3">제출 전 신청 월, 동/호수, 연락처를 확인해주세요. 입금 확인 후 해당 월 자유 이용 방식입니다.</div>
+          {{ form.submit(class='btn btn-primary w-100 js-consent-submit', disabled=true) }}
+          {% if reservation_closed %}
+          <div class="small text-danger text-center mt-2 fw-bold">현재 신청 정원이 모두 마감되어 신청할 수 없습니다.</div>
+          {% endif %}
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}

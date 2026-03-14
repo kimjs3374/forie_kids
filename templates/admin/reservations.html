@@ -8,6 +8,19 @@
   </div>
   <a href="{{ url_for('admin.export_reservations') }}" class="btn btn-success">엑셀 다운로드</a>
 </div>
+<div class="surface-card p-3 mb-3">
+  <div class="d-flex flex-wrap gap-2">
+    <a href="{{ url_for('admin.reservations', filter='all') }}" class="btn {% if active_filter == 'all' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+      전체 <span class="ms-1">{{ reservation_counts.all }}</span>
+    </a>
+    <a href="{{ url_for('admin.reservations', filter='confirmed') }}" class="btn {% if active_filter == 'confirmed' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+      입금완료 <span class="ms-1">{{ reservation_counts.confirmed }}</span>
+    </a>
+    <a href="{{ url_for('admin.reservations', filter='pending') }}" class="btn {% if active_filter == 'pending' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+      입금대기 <span class="ms-1">{{ reservation_counts.pending }}</span>
+    </a>
+  </div>
+</div>
 <div class="surface-card p-3 p-lg-4 reservation-manage-card">
     <div class="table-responsive">
       <table class="table table-modern align-middle reservation-table text-nowrap">

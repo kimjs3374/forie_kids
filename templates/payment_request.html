@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="app-tabs mb-4">
+  <a href="{{ url_for('main.index') }}" class="app-tab">신청하기</a>
+  <a href="{{ url_for('main.lookup') }}" class="app-tab">신청조회</a>
+  <a href="{{ url_for('main.payment_request') }}" class="app-tab is-active">입금확인요청</a>
+  <a href="{{ url_for('main.password_lookup') }}" class="app-tab">비밀번호</a>
+</div>
+
+<div class="row justify-content-center">
+  <div class="col-xl-9">
+    <div class="surface-card p-4 p-lg-5 mb-4">
+      <h1 class="section-title mb-1">입금확인요청</h1>
+      <p class="section-desc mb-4">동/호수, 이름, 연락처와 요청 내용을 남기면 관리자가 확인 후 답변을 남깁니다.</p>
+      <form method="post">
+        {{ form.hidden_tag() }}
+        <div class="row g-3">
+          <div class="col-md-6">{{ form.name.label(class='form-label') }}{{ form.name(class='form-control') }}</div>
+          <div class="col-md-6">{{ form.phone.label(class='form-label') }}{{ form.phone(class='form-control', placeholder='010-1234-5678', inputmode='numeric') }}</div>
+          <div class="col-md-6">{{ form.apt_dong.label(class='form-label') }}{{ form.apt_dong(class='form-control') }}</div>
+          <div class="col-md-6">{{ form.apt_ho.label(class='form-label') }}{{ form.apt_ho(class='form-control') }}</div>
+          <div class="col-12">{{ form.content.label(class='form-label') }}{{ form.content(class='form-control', rows='5', placeholder='입금 날짜, 입금자명, 요청 내용을 적어주세요.') }}</div>
+        </div>
+        <div class="consent-panel mt-3 mb-3">
+          {{ form.consent_agreed(class='form-check-input d-none js-consent-checkbox') }}
+          <div class="d-flex justify-content-between align-items-center gap-2">
+            <div>
+              <div class="fw-bold small">개인정보 수집 및 이용 동의</div>
+              <div class="small text-muted js-consent-status">상세 내용을 확인하고 동의해주세요.</div>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-primary js-open-consent-modal" data-bs-toggle="modal" data-bs-target="#privacyConsentModal" data-consent-target="payment-request">동의하기</button>
+          </div>
+        </div>
+        <div class="mt-4 d-grid gap-2 d-md-flex">
+          <button type="submit" name="action" value="submit" class="btn btn-primary flex-fill js-consent-submit" disabled>입금확인요청</button>
+          <button type="submit" name="action" value="lookup" class="btn btn-outline-primary flex-fill" formnovalidate>답변조회</button>
+        </div>
+      </form>
+    </div>
+
+    {% if searched %}
+    <div class="surface-card p-4">
+      <h2 class="section-title mb-3">요청 기록</h2>
+      {% if threads %}
+        {% for thread in threads|sort(attribute='latest_message_at', reverse=True) %}
+        <div class="request-thread mb-4">
+          <div class="request-thread-header mb-3">
+            <div>
+              <div class="fw-bold">{{ thread.apt_dong }}동 {{ thread.apt_ho }}호 / {{ thread.name }} / {{ thread.phone }}</div>
+              <div class="small text-muted">최근 업데이트: {{ thread.latest_message_at_display or '-' }}</div>
+            </div>
+            <span class="status-badge status-{{ thread.status|lower }}">{{ '답변완료' if thread.status == 'ANSWERED' else '확인대기' }}</span>
+          </div>
+          {% for message in thread.messages|sort(attribute='created_at', reverse=True) %}
+          <div class="request-message {{ 'is-admin' if message.author_type == 'ADMIN' else 'is-user' }}">
+            <div class="request-message-meta">
+              <strong>{{ '관리자 답변' if message.author_type == 'ADMIN' else '사용자 요청' }}</strong>
+              <span>{{ message.created_at_display or '-' }}</span>
+            </div>
+            <div>{{ message.content|replace('\n', '<br>')|safe }}</div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endfor %}
+      {% else %}
+      <div class="text-muted">등록된 입금확인요청 기록이 없습니다.</div>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% if apt_validation_error %}
+<div class="modal fade show" id="aptValidationModal" tabindex="-1" style="display:block; background: rgba(15,23,42,.45);" aria-modal="true" role="dialog">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content surface-card border-0">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold">동/호수 입력 오류</h5>
+        <a href="{{ url_for('main.payment_request') }}" class="btn-close"></a>
+      </div>
+      <div class="modal-body">
+        <p class="mb-0">{{ apt_validation_error }}</p>
+      </div>
+      <div class="modal-footer border-0">
+        <a href="{{ url_for('main.payment_request') }}" class="btn btn-primary">확인</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="modal fade" id="privacyConsentModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content surface-card border-0">
+      <div class="modal-header border-0">
+        <h5 class="modal-title fw-bold">개인정보 수집 및 이용 동의</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+      </div>
+      <div class="modal-body pt-0">
+        <ul class="consent-detail-list mb-0">
+          <li><strong>항목:</strong> 성명, 동/호수, 연락처</li>
+          <li><strong>목적:</strong> 놀이터 예약 및 입금 확인, 예약 상태 알림 발송</li>
+          <li><strong>보유 기간:</strong> 예약 시설 이용 완료 후 12개월</li>
+          <li><strong>동의 거부:</strong> 거부 가능하나 예약 불가</li>
+        </ul>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn" data-bs-dismiss="modal">거부</button>
+        <button type="button" class="btn btn-primary" id="privacyConsentConfirmBtn">동의합니다</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
