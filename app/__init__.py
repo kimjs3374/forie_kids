@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import click
 from flask import Flask
 
@@ -12,6 +14,18 @@ def create_app():
     app.config.from_object(Config)
 
     app.config['TEMPLATES_AUTO_RELOAD'] = True
+
+    @app.context_processor
+    def inject_layout_context():
+        company_name = app.config.get("FOOTER_COMPANY_NAME") or "포리에 실내놀이터 예약시스템"
+        return {
+            "current_year": datetime.now().year,
+            "footer_company_name": company_name,
+            "footer_address": app.config.get("FOOTER_ADDRESS") or "주소 정보 준비중",
+            "footer_contact": app.config.get("FOOTER_CONTACT") or "연락처 정보 준비중",
+            "footer_copyright": app.config.get("FOOTER_COPYRIGHT")
+            or f"© {datetime.now().year} {company_name}. All rights reserved.",
+        }
 
     @app.before_request
     def sync_next_month_reservation():
