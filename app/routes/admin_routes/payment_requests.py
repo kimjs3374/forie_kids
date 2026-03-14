@@ -1,4 +1,4 @@
-from flask import flash, redirect, render_template, request, url_for
+from flask import current_app, flash, redirect, render_template, request, url_for
 
 from ...forms import PaymentRequestReplyForm
 from ...services.reservation import add_payment_request_reply, list_payment_requests, payment_request_status_label
@@ -39,6 +39,7 @@ def reply_payment_request():
             add_payment_request_reply(thread_id, content)
             flash("답변이 등록되었습니다.", "success")
         except Exception as exc:
+            current_app.logger.exception("입금확인요청 답변 등록 실패 | thread_id=%s", thread_id)
             flash(f"답변 등록 실패: {exc}", "danger")
 
     if is_ajax:

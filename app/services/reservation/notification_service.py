@@ -18,7 +18,7 @@ def _send_telegram_message(message):
 def send_telegram_reservation_alert(target_month, apt_dong, apt_ho, name):
     try:
         month_label = f"{int(str(target_month).split('-')[1])}월"
-    except Exception:
+    except (TypeError, ValueError, IndexError):
         month_label = str(target_month)
 
     message = (

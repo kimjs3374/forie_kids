@@ -161,6 +161,74 @@ create table if not exists public.bank_match_logs (
 create index if not exists idx_bank_transactions_status_date on public.bank_transactions(status, transaction_date desc);
 create index if not exists idx_bank_transactions_reservation on public.bank_transactions(matched_reservation_id);
 create index if not exists idx_bank_sync_runs_started_at on public.bank_sync_runs(started_at desc);
+create index if not exists idx_reservations_slot_status on public.reservations(slot_id, status);
+create index if not exists idx_reservations_month_status on public.reservations(month_id, status);
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_indexes
+    where schemaname = 'public'
+      and indexname = 'uq_reservations_active_month_apt_unit'
+  ) then
+    if exists (
+      select 1
+      from public.reservations
+      where status <> 'CANCELLED'
+      group by month_id, apt_unit
+      having count(*) > 1
+    ) then
+      raise notice 'uq_reservations_active_month_apt_unit skipped because duplicate active reservations already exist.';
+    else
+      execute 'create unique index uq_reservations_active_month_apt_unit on public.reservations(month_id, apt_unit) where status <> ''CANCELLED''';
+    end if;
+  end if;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_indexes
+    where schemaname = 'public'
+      and indexname = 'uq_reservations_active_month_phone'
+  ) then
+    if exists (
+      select 1
+      from public.reservations
+      where status <> 'CANCELLED'
+      group by month_id, phone
+      having count(*) > 1
+    ) then
+      raise notice 'uq_reservations_active_month_phone skipped because duplicate active phone reservations already exist.';
+    else
+      execute 'create unique index uq_reservations_active_month_phone on public.reservations(month_id, phone) where status <> ''CANCELLED''';
+    end if;
+  end if;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1
+    from pg_indexes
+    where schemaname = 'public'
+      and indexname = 'uq_bank_sync_runs_running'
+  ) then
+    if exists (
+      select 1
+      from public.bank_sync_runs
+      where status = 'RUNNING'
+      group by bank_setting_id
+      having count(*) > 1
+    ) then
+      raise notice 'uq_bank_sync_runs_running skipped because multiple RUNNING sync rows already exist.';
+    else
+      execute 'create unique index uq_bank_sync_runs_running on public.bank_sync_runs(bank_setting_id) where status = ''RUNNING''';
+    end if;
+  end if;
+end $$;
 
 alter table public.bank_settings
   add column if not exists payment_amount integer not null default 5000;
@@ -176,6 +244,113 @@ alter table public.reservation_months
 
 alter table public.reservations
   add column if not exists expected_amount integer not null default 0;
+
+create or replace function public.create_reservation_atomic(
+  p_month_id bigint,
+  p_name varchar,
+  p_apt_unit varchar,
+  p_phone varchar,
+  p_children_count integer,
+  p_expected_amount integer,
+  p_consent_agreed boolean,
+  p_consent_agreed_at timestamptz default null
+)
+returns table (
+  reservation_id bigint,
+  slot_id bigint,
+  reservation_status varchar
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_month public.reservation_months%rowtype;
+  v_slot public.reservation_slots%rowtype;
+  v_reserved_count integer;
+  v_inserted public.reservations%rowtype;
+begin
+  select *
+  into v_month
+  from public.reservation_months
+  where id = p_month_id;
+
+  if not found then
+    raise exception using message = '현재 신청 가능한 월이 아닙니다.';
+  end if;
+
+  if now() < v_month.open_at or now() > v_month.close_at then
+    raise exception using message = '현재 신청 접수 기간이 아닙니다.';
+  end if;
+
+  select *
+  into v_slot
+  from public.reservation_slots
+  where month_id = p_month_id
+    and status = 'ACTIVE'
+  order by play_date asc, start_time asc, id asc
+  limit 1
+  for update;
+
+  if not found then
+    raise exception using message = '신청 가능한 슬롯이 없습니다. 관리자에게 문의해주세요.';
+  end if;
+
+  select count(*)
+  into v_reserved_count
+  from public.reservations
+  where slot_id = v_slot.id
+    and status <> 'CANCELLED';
+
+  if v_reserved_count >= coalesce(v_slot.capacity, 0) then
+    raise exception using message = '해당 월 신청 정원이 모두 마감되었습니다. 더 이상 신청할 수 없습니다.';
+  end if;
+
+  if exists (
+    select 1
+    from public.reservations
+    where month_id = p_month_id
+      and status <> 'CANCELLED'
+      and (apt_unit = p_apt_unit or phone = p_phone)
+  ) then
+    raise exception using message = '해당 월 이용 신청은 세대당 1회만 가능합니다. 입금 확인 후 해당 월 자유롭게 이용할 수 있습니다.';
+  end if;
+
+  begin
+    insert into public.reservations (
+      month_id,
+      slot_id,
+      name,
+      apt_unit,
+      phone,
+      children_count,
+      expected_amount,
+      consent_agreed,
+      consent_agreed_at,
+      status
+    )
+    values (
+      p_month_id,
+      v_slot.id,
+      p_name,
+      p_apt_unit,
+      p_phone,
+      p_children_count,
+      coalesce(p_expected_amount, 0),
+      coalesce(p_consent_agreed, false),
+      p_consent_agreed_at,
+      'PENDING_PAYMENT'
+    )
+    returning * into v_inserted;
+  exception
+    when unique_violation then
+      raise exception using message = '해당 월 이용 신청은 세대당 1회만 가능합니다. 입금 확인 후 해당 월 자유롭게 이용할 수 있습니다.';
+  end;
+
+  return query
+  select v_inserted.id, v_slot.id, v_inserted.status;
+end;
+$$;
 
 update public.reservation_months
 set payment_amount = 0

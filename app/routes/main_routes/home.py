@@ -8,6 +8,7 @@ from ...services.reservation import (
     get_months_with_slots,
     get_notice_text,
 )
+from ..admin_routes.decorators import is_admin_session_authenticated
 from . import main_bp
 from .helpers import _build_month_payload, _get_apartment_validation_error
 
@@ -39,8 +40,9 @@ def index():
 
     lookup_form = ReservationLookupForm()
     ticker_messages = get_active_ticker_messages()
-    ticker_form = TickerMessageForm() if session.get("admin_logged_in") else None
-    ticker_manage_messages = list_ticker_messages() if session.get("admin_logged_in") else []
+    is_admin_authenticated = is_admin_session_authenticated()
+    ticker_form = TickerMessageForm() if is_admin_authenticated else None
+    ticker_manage_messages = list_ticker_messages() if is_admin_authenticated else []
     reservation_closed = bool((selected_month or {}).get("reservation_closed"))
     reservation_disabled = bool((selected_month or {}).get("reservation_disabled"))
 

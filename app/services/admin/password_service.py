@@ -1,6 +1,8 @@
 import random
 from datetime import datetime, timezone
 
+from flask import current_app, has_app_context
+
 from ..supabase_service import delete_rows, fetch_rows, insert_row, patch_rows
 
 
@@ -42,6 +44,8 @@ def _reserve_password(password):
         insert_row("used_passwords", {"password": normalized})
         return True
     except Exception:
+        if has_app_context():
+            current_app.logger.exception("사용된 비밀번호 저장 실패 | password=%s", normalized)
         return False
 
 

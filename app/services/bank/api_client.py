@@ -3,6 +3,8 @@ from urllib.parse import urljoin
 
 import requests
 from flask import current_app
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 
 class BankApiError(RuntimeError):
@@ -11,6 +13,28 @@ class BankApiError(RuntimeError):
 
 class AccountNotRegisteredError(BankApiError):
     pass
+
+
+_BANK_API_SESSION = None
+
+
+def _get_session():
+    global _BANK_API_SESSION
+    if _BANK_API_SESSION is None:
+        retry = Retry(
+            total=3,
+            connect=3,
+            read=3,
+            backoff_factor=0.5,
+            status_forcelist=(408, 429, 500, 502, 503, 504),
+            allowed_methods=frozenset({"GET", "POST"}),
+        )
+        adapter = HTTPAdapter(max_retries=retry)
+        session = requests.Session()
+        session.mount("https://", adapter)
+        session.mount("http://", adapter)
+        _BANK_API_SESSION = session
+    return _BANK_API_SESSION
 
 
 def _base_url():
@@ -54,7 +78,7 @@ def _format_date(value):
 
 
 def register_account(setting):
-    response = requests.post(
+    response = _get_session().post(
         _endpoint("/v1/accounts"),
         headers=_headers(),
         json={
@@ -67,7 +91,7 @@ def register_account(setting):
 
 
 def fetch_transactions(setting, start_date, end_date):
-    response = requests.post(
+    response = _get_session().post(
         _endpoint("/v1/transactions"),
         headers=_headers(),
         json={

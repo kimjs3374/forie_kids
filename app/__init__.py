@@ -1,9 +1,10 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import click
 from flask import Flask
+from werkzeug.security import generate_password_hash
 
-from config import Config
+from config import Config, validate_security_settings
 from .services.admin import ensure_next_month_reservation
 from .services.bank import sync_bank_transactions
 from .services.cleanup import delete_expired_personal_data
@@ -12,8 +13,12 @@ from .services.cleanup import delete_expired_personal_data
 def create_app():
     app = Flask(__name__, template_folder="../templates", static_folder="static")
     app.config.from_object(Config)
+    app.permanent_session_lifetime = timedelta(minutes=app.config["ADMIN_SESSION_TIMEOUT_MINUTES"])
 
-    app.config['TEMPLATES_AUTO_RELOAD'] = True
+    app.config["TEMPLATES_AUTO_RELOAD"] = True
+
+    for warning_message in validate_security_settings(app.config):
+        app.logger.warning("보안 설정 경고: %s", warning_message)
 
     @app.context_processor
     def inject_layout_context():
@@ -27,12 +32,13 @@ def create_app():
             or f"© {datetime.now().year} {company_name}. All rights reserved.",
         }
 
-    @app.before_request
-    def sync_next_month_reservation():
-        try:
-            ensure_next_month_reservation()
-        except Exception:
-            app.logger.exception("다음달 예약 자동 생성 중 오류가 발생했습니다.")
+    if app.config.get("AUTO_ENSURE_NEXT_MONTH_ON_REQUESTS"):
+        @app.before_request
+        def sync_next_month_reservation():
+            try:
+                ensure_next_month_reservation()
+            except Exception:
+                app.logger.exception("다음달 예약 자동 생성 중 오류가 발생했습니다.")
 
     from .routes.main import main_bp
     from .routes.admin import admin_bp
@@ -71,5 +77,20 @@ def create_app():
             f"matched={summary['matched_count']} "
             f"unmatched={summary['unmatched_count']}"
         )
+
+    @app.cli.command("ensure-next-month-reservation")
+    def ensure_next_month_reservation_command():
+        """Create next month's reservation record when the scheduling condition is met."""
+        created = ensure_next_month_reservation()
+        if created:
+            click.echo("next month reservation created")
+        else:
+            click.echo("next month reservation skipped")
+
+    @app.cli.command("generate-admin-password-hash")
+    @click.option("--password", prompt=True, hide_input=True, confirmation_prompt=True)
+    def generate_admin_password_hash_command(password):
+        """Generate a password hash for ADMIN_PASSWORD_HASH."""
+        click.echo(generate_password_hash(password))
 
     return app

@@ -1,3 +1,5 @@
+from flask import current_app
+
 from ..supabase_service import fetch_rows
 
 
@@ -19,5 +21,5 @@ def get_active_ticker_messages():
 
         active_messages.extend(get_billboard_ticker_messages())
     except Exception:
-        pass
+        current_app.logger.exception("전광판 메시지 병합 중 오류가 발생했습니다.")
     return active_messages

@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 
 from ..shared import KST, parse_iso_datetime
-from ..supabase_service import fetch_rows, insert_row, patch_rows
+from ..supabase_service import SupabaseRequestError, fetch_rows, insert_row, patch_rows
 from .api_client import AccountNotRegisteredError, fetch_transactions, register_account
 from .matching_service import auto_match_pending_transactions, build_transaction_datetime, build_transaction_uid, extract_deposit_name
 from .settings_service import get_active_bank_setting, update_bank_setting
@@ -28,17 +28,23 @@ def _build_sync_dates(setting, lookback_days):
 
 
 def _create_sync_run(setting_id, start_date, end_date):
-    rows = insert_row(
-        "bank_sync_runs",
-        {
-            "bank_setting_id": setting_id,
-            "started_at": datetime.now(timezone.utc).isoformat(),
-            "status": "RUNNING",
-            "requested_from": start_date.isoformat(),
-            "requested_to": end_date.isoformat(),
-        },
-    )
-    return rows[0] if rows else None
+    try:
+        rows = insert_row(
+            "bank_sync_runs",
+            {
+                "bank_setting_id": setting_id,
+                "started_at": datetime.now(timezone.utc).isoformat(),
+                "status": "RUNNING",
+                "requested_from": start_date.isoformat(),
+                "requested_to": end_date.isoformat(),
+            },
+        )
+        return rows[0] if rows else None
+    except SupabaseRequestError:
+        running_run = get_running_sync_run(setting_id)
+        if running_run:
+            return None
+        raise
 
 
 def _finish_sync_run(run_id, **payload):
@@ -102,6 +108,14 @@ def list_recent_sync_runs(limit=10):
     )
 
 
+def get_running_sync_run(setting_id=None):
+    params = {"select": "*", "status": "eq.RUNNING", "order": "started_at.desc,id.desc", "limit": "1"}
+    if setting_id:
+        params["bank_setting_id"] = f"eq.{setting_id}"
+    rows = fetch_rows("bank_sync_runs", params=params)
+    return rows[0] if rows else None
+
+
 def sync_bank_transactions(force=False, lookback_days=30):
     setting = get_active_bank_setting(include_decrypted=True)
     if not setting:
@@ -124,8 +138,31 @@ def sync_bank_transactions(force=False, lookback_days=30):
             "unmatched_count": 0,
         }
 
+    running_run = get_running_sync_run(setting["id"])
+    if running_run:
+        return {
+            "status": "SKIPPED",
+            "reason": "이미 은행 동기화가 실행 중입니다.",
+            "fetched_count": 0,
+            "inserted_count": 0,
+            "matched_count": 0,
+            "unmatched_count": 0,
+            "running_started_at": running_run.get("started_at"),
+        }
+
     start_date, end_date = _build_sync_dates(setting, lookback_days)
     sync_run = _create_sync_run(setting["id"], start_date, end_date)
+    if not sync_run:
+        running_run = get_running_sync_run(setting["id"])
+        return {
+            "status": "SKIPPED",
+            "reason": "이미 은행 동기화가 실행 중입니다.",
+            "fetched_count": 0,
+            "inserted_count": 0,
+            "matched_count": 0,
+            "unmatched_count": 0,
+            "running_started_at": (running_run or {}).get("started_at"),
+        }
 
     try:
         try:

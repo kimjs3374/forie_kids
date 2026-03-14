@@ -3,67 +3,52 @@ from datetime import datetime, timezone
 from flask import current_app
 
 from ..bank.settings_service import get_configured_payment_amount
-from ..shared import build_apt_unit, format_kst_datetime, is_month_open, split_apt_unit, status_label
-from ..supabase_service import fetch_rows, insert_row
-from .month_service import get_months_with_slots
+from ..shared import build_apt_unit, format_kst_datetime, split_apt_unit, status_label
+from ..supabase_service import SupabaseRequestError, call_rpc, fetch_rows
 from .notification_service import send_telegram_reservation_alert
+
+
+def _extract_reservation_error_message(exc):
+    payload = getattr(exc, "response_data", {}) or {}
+    for key in ("details", "message", "hint"):
+        value = str(payload.get(key) or "").strip()
+        if value:
+            return value
+    return "이용 신청 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
 
 
 def create_reservation(form):
     month_id = int(form.month_id.data)
     now = datetime.now(timezone.utc).isoformat()
-    months = get_months_with_slots()
-    month = next((month for month in months if month["id"] == month_id), None)
-    slot = next((slot for slot in (month or {}).get("slots", []) if slot.get("status") == "ACTIVE"), None)
+    month_rows = fetch_rows(
+        "reservation_months",
+        params={"select": "id,target_month,payment_amount", "id": f"eq.{month_id}", "limit": "1"},
+    )
+    month = month_rows[0] if month_rows else None
 
     if not month:
         return False, "현재 신청 가능한 월이 아닙니다."
-    if not is_month_open(month):
-        return False, "현재 신청 접수 기간이 아닙니다."
-    if not slot and month:
-        fallback_slot = insert_row(
-            "reservation_slots",
-            {
-                "month_id": month_id,
-                "play_date": month["open_at"][:10],
-                "start_time": "00:00:00",
-                "end_time": "23:59:00",
-                "capacity": 9999,
-                "status": "ACTIVE",
-            },
-        )
-        if fallback_slot:
-            slot = fallback_slot[0]
-
-    if not slot:
-        return False, "해당 월 이용 신청용 기본 이용 정보 생성에 실패했습니다. 관리자에게 문의해주세요."
-    if slot.get("remaining_capacity", 0) <= 0:
-        return False, "해당 월 신청 정원이 모두 마감되었습니다. 더 이상 신청할 수 없습니다."
 
     phone = form.phone.data.strip()
     apt_unit = build_apt_unit(form.apt_dong.data, form.apt_ho.data)
-    monthly_reservations = fetch_rows(
-        "reservations",
-        params={"select": "id,phone,apt_unit,status", "month_id": f"eq.{month_id}", "status": "neq.CANCELLED"},
-    )
-    if any(item.get("phone") == phone or item.get("apt_unit") == apt_unit for item in monthly_reservations):
-        return False, "해당 월 이용 신청은 세대당 1회만 가능합니다. 입금 확인 후 해당 월 자유롭게 이용할 수 있습니다."
+    try:
+        call_rpc(
+            "create_reservation_atomic",
+            {
+                "p_month_id": month_id,
+                "p_name": form.name.data.strip(),
+                "p_apt_unit": apt_unit,
+                "p_phone": phone,
+                "p_children_count": int(form.children_count.data),
+                "p_expected_amount": int((month or {}).get("payment_amount") or get_configured_payment_amount()),
+                "p_consent_agreed": bool(form.consent_agreed.data),
+                "p_consent_agreed_at": now if form.consent_agreed.data else None,
+            },
+        )
+    except SupabaseRequestError as exc:
+        current_app.logger.warning("예약 생성 RPC 실패: %s", exc)
+        return False, _extract_reservation_error_message(exc)
 
-    insert_row(
-        "reservations",
-        {
-            "month_id": month_id,
-            "slot_id": slot["id"],
-            "name": form.name.data.strip(),
-            "apt_unit": apt_unit,
-            "phone": phone,
-            "children_count": form.children_count.data,
-            "expected_amount": int((month or {}).get("payment_amount") or get_configured_payment_amount()),
-            "consent_agreed": bool(form.consent_agreed.data),
-            "consent_agreed_at": now if form.consent_agreed.data else None,
-            "status": "PENDING_PAYMENT",
-        },
-    )
     try:
         send_telegram_reservation_alert(
             month.get("target_month"),

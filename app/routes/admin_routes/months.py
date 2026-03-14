@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from flask import flash, redirect, render_template, request, url_for
+from flask import current_app, flash, redirect, render_template, request, url_for
 
 from ...forms import MonthForm
 from ...services.bank import get_configured_payment_amount
@@ -26,6 +26,7 @@ def months():
             flash("예약 월이 생성되었습니다.", "success")
             return redirect(url_for("admin.months"))
         except Exception as exc:
+            current_app.logger.exception("예약 월 생성 실패")
             flash(f"예약 월 생성 실패: {exc}", "danger")
 
     return render_template("admin/months.html", form=form, months=month_list, bank_payment_amount=bank_payment_amount)
@@ -43,6 +44,7 @@ def edit_month(month_id):
             update_month(month_id, form)
             flash("예약 월 정보가 수정되었습니다.", "success")
         except Exception as exc:
+            current_app.logger.exception("예약 월 수정 실패 | month_id=%s", month_id)
             flash(f"예약 월 수정 실패: {exc}", "danger")
     else:
         flash("예약 월 수정 입력값을 확인해주세요.", "danger")
@@ -56,5 +58,6 @@ def remove_month(month_id):
         delete_month(month_id)
         flash("예약 월이 삭제되었습니다.", "success")
     except Exception as exc:
+        current_app.logger.exception("예약 월 삭제 실패 | month_id=%s", month_id)
         flash(f"예약 월 삭제 실패: {exc}", "danger")
     return redirect(url_for("admin.months"))

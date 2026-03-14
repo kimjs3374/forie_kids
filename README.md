@@ -1,6 +1,6 @@
 # 아파트 어린이 놀이터 월별 예약 관리 시스템
 
-Flask + SQLAlchemy + Jinja2 기반 MVP입니다. 개발은 Windows에서 해도 되지만, **실제 실행환경은 Ubuntu**를 기준으로 구성합니다.
+Flask + Supabase REST + Jinja2 기반 운영형 예약 시스템입니다. 개발은 Windows에서 해도 되지만, **실제 실행환경은 Ubuntu**를 기준으로 구성합니다.
 
 ## Ubuntu 실행 기준 메모
 
@@ -88,7 +88,22 @@ SUPABASE_URL=https://xxxx.supabase.co
 SUPABASE_ANON_KEY=sb_publishable_xxxxx
 SUPABASE_SERVICE_ROLE_KEY=eyJ...
 ADMIN_USERNAME=admin
-ADMIN_PASSWORD=원하는관리자비밀번호
+ADMIN_PASSWORD_HASH=생성된해시문자열
+ADMIN_SESSION_TIMEOUT_MINUTES=30
+ADMIN_MAX_LOGIN_ATTEMPTS=5
+ADMIN_LOGIN_BLOCK_MINUTES=15
+SESSION_COOKIE_SAMESITE=Lax
+SESSION_COOKIE_SECURE=true
+ENFORCE_SECURE_CONFIG=true
+AUTO_ENSURE_NEXT_MONTH_ON_REQUESTS=false
+```
+
+관리자 비밀번호는 평문 `ADMIN_PASSWORD`보다 **`ADMIN_PASSWORD_HASH` 사용을 권장**합니다.
+
+해시 생성 예시:
+
+```bash
+flask --app app generate-admin-password-hash
 ```
 
 ### 3) 주의할 점
@@ -143,6 +158,23 @@ Supabase SQL Editor에서 루트의 `supabase_schema.sql` 내용을 실행하세
 ## 기본 관리자 계정
 
 - ID: `.env`의 `ADMIN_USERNAME`
-- PW: `.env`의 `ADMIN_PASSWORD`
+- PW: `.env`의 `ADMIN_PASSWORD_HASH`에 대응되는 원본 비밀번호
 
-최초 실행 시 관리자 계정과 기본 설정 레코드가 자동 생성됩니다.
+> 레거시 호환을 위해 `ADMIN_PASSWORD` fallback 이 남아 있지만, 운영에서는 사용하지 않는 것을 권장합니다.
+
+## 운영용 CLI 명령
+
+```bash
+flask --app app cleanup-expired-data
+flask --app app sync-bank-transactions --force
+flask --app app ensure-next-month-reservation
+flask --app app generate-admin-password-hash
+```
+
+## 운영 보안 권장값
+
+- `SESSION_COOKIE_SECURE=true` (HTTPS 운영 시 필수)
+- `SESSION_COOKIE_SAMESITE=Lax`
+- `ENFORCE_SECURE_CONFIG=true`
+- `ADMIN_PASSWORD_HASH` 사용
+- `FLASK_DEBUG=false`

@@ -1,5 +1,7 @@
 from datetime import datetime, timezone
 
+from flask import current_app
+
 from ..supabase_service import delete_rows, fetch_rows, insert_row, patch_rows
 
 
@@ -22,7 +24,7 @@ def list_ticker_messages():
 
         messages.extend(get_billboard_manage_messages())
     except Exception:
-        pass
+        current_app.logger.exception("전광판 관리 메시지 병합 중 오류가 발생했습니다.")
     messages.sort(key=lambda item: (int(item.get("sort_order") or 0), str(item.get("id") or "")))
     return messages
 

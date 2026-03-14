@@ -1,19 +1,56 @@
 from datetime import datetime, timezone
 
-from ..bank import find_candidate_reservations, get_bank_setting, manual_match_transaction, save_bank_setting, sync_bank_transactions
+from flask import current_app
+
+from ..bank import get_bank_setting, manual_match_transaction, save_bank_setting, sync_bank_transactions
 from ..bank.billboard_service import build_billboard_message
 from ..bank.matching_service import normalize_name
 from ..bank.settings_service import get_bank_code_label, update_bank_setting
-from ..bank.sync_service import list_recent_sync_runs
+from ..bank.sync_service import get_running_sync_run, list_recent_sync_runs
 from ..shared import format_kst_datetime, parse_iso_datetime, split_apt_unit, status_label
-from ..supabase_service import fetch_rows, patch_rows
+from ..supabase_service import count_rows, fetch_rows, patch_rows
 
 
 def _safe_fetch_rows(table_name, params=None):
     try:
         return fetch_rows(table_name, params=params)
     except Exception:
+        current_app.logger.exception("은행 관리자 데이터 조회 실패 | table=%s params=%s", table_name, params)
         return []
+
+
+def _safe_count_rows(table_name, params=None):
+    try:
+        return count_rows(table_name, params=params)
+    except Exception:
+        current_app.logger.exception("은행 관리자 데이터 카운트 실패 | table=%s params=%s", table_name, params)
+        return 0
+
+
+def _normalize_search_text(search_text):
+    return (
+        str(search_text or "")
+        .strip()
+        .replace(",", " ")
+        .replace("(", " ")
+        .replace(")", " ")
+        .replace("*", " ")
+    )
+
+
+def _build_transaction_params(status_filter="all", search_text=None):
+    params = {}
+    if status_filter and status_filter != "all":
+        params["status"] = f"eq.{status_filter.upper()}"
+
+    normalized_search = _normalize_search_text(search_text)
+    if normalized_search:
+        wildcard = f"*{normalized_search}*"
+        params["or"] = (
+            f"(deposit_name.ilike.{wildcard},description.ilike.{wildcard},"
+            f"display_name.ilike.{wildcard},counterparty.ilike.{wildcard})"
+        )
+    return params
 
 
 def _format_sync_run(sync_run):
@@ -27,6 +64,7 @@ def get_bank_setting_view():
     try:
         return get_bank_setting(include_decrypted=False)
     except Exception:
+        current_app.logger.exception("은행 설정 조회에 실패했습니다.")
         return None
 
 
@@ -50,19 +88,76 @@ def list_bank_sync_histories(limit=10):
     try:
         return [_format_sync_run(item) for item in list_recent_sync_runs(limit=limit)]
     except Exception:
+        current_app.logger.exception("은행 동기화 이력 조회에 실패했습니다.")
         return []
+
+
+def get_bank_transaction_counts(search_text=None):
+    return {
+        "all": _safe_count_rows("bank_transactions", params={**_build_transaction_params(search_text=search_text)}),
+        "pending": _safe_count_rows(
+            "bank_transactions",
+            params={**_build_transaction_params(status_filter="pending", search_text=search_text)},
+        ),
+        "matched": _safe_count_rows(
+            "bank_transactions",
+            params={**_build_transaction_params(status_filter="matched", search_text=search_text)},
+        ),
+        "unmatched": _safe_count_rows(
+            "bank_transactions",
+            params={**_build_transaction_params(status_filter="unmatched", search_text=search_text)},
+        ),
+        "ignored": _safe_count_rows(
+            "bank_transactions",
+            params={**_build_transaction_params(status_filter="ignored", search_text=search_text)},
+        ),
+    }
 
 
 def _reservation_map():
     reservations = _safe_fetch_rows(
         "reservations",
-        params={"select": "id,name,apt_unit,month_id,expected_amount,created_at,status,payment_confirmed_at"},
+        params={"select": "id,name,apt_unit,phone,month_id,expected_amount,created_at,status,payment_confirmed_at"},
     )
     months = {
         item["id"]: item
         for item in _safe_fetch_rows("reservation_months", params={"select": "id,target_month,title,payment_amount"})
     }
     return reservations, months
+
+
+def _build_candidate_reservations(transaction, reservations, month_map, require_name_match=False, limit=None):
+    transaction_dt = parse_iso_datetime(transaction.get("transaction_date"))
+    normalized_deposit_name = normalize_name(transaction.get("deposit_name"))
+    transaction_amount = int(transaction.get("amount") or 0)
+    candidates = []
+
+    for reservation in reservations:
+        if reservation.get("status") != "PENDING_PAYMENT":
+            continue
+        if int(reservation.get("expected_amount") or 0) != transaction_amount:
+            continue
+
+        created_at = parse_iso_datetime(reservation.get("created_at"))
+        if transaction_dt and created_at and transaction_dt < created_at:
+            continue
+
+        reservation_name_matches = normalize_name(reservation.get("name")) == normalized_deposit_name if normalized_deposit_name else False
+        if require_name_match and not reservation_name_matches:
+            continue
+
+        item = dict(reservation)
+        item["name_matches"] = reservation_name_matches
+        item["created_at_display"] = format_kst_datetime(reservation.get("created_at"))
+        item["expected_amount_display"] = f"{int(reservation.get('expected_amount') or 0):,}원"
+        dong, ho = split_apt_unit(reservation.get("apt_unit"))
+        item["apt_dong"] = dong
+        item["apt_ho"] = ho
+        item["target_month"] = month_map.get(reservation.get("month_id"), {}).get("target_month") or "-"
+        candidates.append(item)
+
+    candidates.sort(key=lambda item: (not item.get("name_matches"), item.get("created_at") or "", item.get("id") or 0))
+    return candidates[:limit] if limit is not None else candidates
 
 
 def _build_manual_match_options(transaction, reservations, month_map, limit=30):
@@ -115,10 +210,15 @@ def _build_manual_match_options(transaction, reservations, month_map, limit=30):
     return options[:limit]
 
 
-def list_bank_transactions(status_filter="all", limit=100):
-    params = {"select": "*", "order": "transaction_date.desc,id.desc", "limit": str(limit)}
-    if status_filter and status_filter != "all":
-        params["status"] = f"eq.{status_filter.upper()}"
+def list_bank_transactions(status_filter="all", limit=100, offset=0, search_text=None):
+    params = {
+        "select": "*",
+        "order": "transaction_date.desc,id.desc",
+        "limit": str(limit),
+        **_build_transaction_params(status_filter=status_filter, search_text=search_text),
+    }
+    if offset:
+        params["offset"] = str(offset)
 
     transactions = _safe_fetch_rows("bank_transactions", params=params)
     reservations, month_map = _reservation_map()
@@ -161,11 +261,19 @@ def list_bank_transactions(status_filter="all", limit=100):
 
         candidates = []
         if item["can_manual_match"]:
-            strict_candidates = find_candidate_reservations(transaction, require_name_match=True)
-            for candidate in find_candidate_reservations(transaction, require_name_match=False)[:5]:
-                month = month_map.get(candidate.get("month_id"), {})
-                candidate["target_month"] = month.get("target_month") or "-"
-                candidates.append(candidate)
+            strict_candidates = _build_candidate_reservations(
+                transaction,
+                pending_reservations,
+                month_map,
+                require_name_match=True,
+            )
+            candidates = _build_candidate_reservations(
+                transaction,
+                pending_reservations,
+                month_map,
+                require_name_match=False,
+                limit=5,
+            )
         item["manual_match_options"] = _build_manual_match_options(transaction, pending_reservations, month_map)
         item["candidate_reservations"] = candidates
         item["strict_candidate_count"] = len(strict_candidates)
@@ -206,7 +314,9 @@ def list_bank_transactions(status_filter="all", limit=100):
 def get_bank_dashboard_summary():
     summary = {
         "is_enabled": False,
+        "is_sync_running": False,
         "last_synced_at_display": "",
+        "running_sync_started_at_display": "",
         "last_error_message": "",
         "total_transactions": 0,
         "pending_count": 0,
@@ -222,17 +332,21 @@ def get_bank_dashboard_summary():
         summary["last_synced_at_display"] = format_kst_datetime(setting.get("last_synced_at"))
         summary["last_error_message"] = setting.get("last_error_message") or ""
         summary["payment_amount_display"] = f"{int(setting.get('payment_amount') or 0):,}원"
+        running_run = get_running_sync_run(setting.get("id"))
+        if running_run:
+            summary["is_sync_running"] = True
+            summary["running_sync_started_at_display"] = format_kst_datetime(running_run.get("started_at"))
     else:
         summary["payment_amount_display"] = "5,000원"
 
-    transactions = _safe_fetch_rows("bank_transactions", params={"select": "id,status,is_billboard_approved"})
-    summary["total_transactions"] = len(transactions)
-    summary["pending_count"] = sum(1 for item in transactions if item.get("status") == "PENDING")
-    summary["matched_count"] = sum(1 for item in transactions if item.get("status") == "MATCHED")
-    summary["unmatched_count"] = sum(1 for item in transactions if item.get("status") == "UNMATCHED")
-    summary["ignored_count"] = sum(1 for item in transactions if item.get("status") == "IGNORED")
-    summary["approved_billboard_count"] = sum(
-        1 for item in transactions if item.get("status") == "UNMATCHED" and item.get("is_billboard_approved")
+    summary["total_transactions"] = _safe_count_rows("bank_transactions")
+    summary["pending_count"] = _safe_count_rows("bank_transactions", params={"status": "eq.PENDING"})
+    summary["matched_count"] = _safe_count_rows("bank_transactions", params={"status": "eq.MATCHED"})
+    summary["unmatched_count"] = _safe_count_rows("bank_transactions", params={"status": "eq.UNMATCHED"})
+    summary["ignored_count"] = _safe_count_rows("bank_transactions", params={"status": "eq.IGNORED"})
+    summary["approved_billboard_count"] = _safe_count_rows(
+        "bank_transactions",
+        params={"status": "eq.UNMATCHED", "is_billboard_approved": "eq.true"},
     )
     return summary
 
