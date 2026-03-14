@@ -38,7 +38,7 @@
       <a href="{{ url_for('admin.months') }}" class="app-tab {% if request.endpoint in ['admin.months', 'admin.edit_month', 'admin.remove_month'] %}is-active{% endif %}">예약생성</a>
       <a href="{{ url_for('admin.reservations') }}" class="app-tab {% if request.endpoint in ['admin.reservations', 'admin.change_reservation_status'] %}is-active{% endif %}">예약관리</a>
       <a href="{{ url_for('admin.bank_management') }}" class="app-tab {% if request.endpoint in ['admin.bank_management', 'admin.save_bank_settings_route', 'admin.sync_bank_transactions_now', 'admin.approve_bank_transaction', 'admin.ignore_bank_transaction_route', 'admin.match_bank_transaction_route'] %}is-active{% endif %}">은행연동</a>
-      <a href="{{ url_for('admin.payment_requests') }}" class="app-tab {% if request.endpoint in ['admin.payment_requests', 'admin.reply_payment_request'] %}is-active{% endif %}">입금확인요청</a>
+      <a href="{{ url_for('admin.payment_requests') }}" class="app-tab {% if request.endpoint in ['admin.payment_requests', 'admin.reply_payment_request'] %}is-active{% endif %}">문의사항</a>
       <a href="{{ url_for('admin.passwords') }}" class="app-tab {% if request.endpoint in ['admin.passwords', 'admin.update_password'] %}is-active{% endif %}">비번관리</a>
       <a href="{{ url_for('admin.help_page') }}" class="app-tab {% if request.endpoint == 'admin.help_page' %}is-active{% endif %}">도움말</a>
     </div>
@@ -79,7 +79,7 @@
       <span>조회</span>
     </a>
     <a href="{{ url_for('main.payment_request') }}" class="bottom-tabbar-item {% if request.endpoint == 'main.payment_request' %}is-active{% endif %}">
-      <span>입금요청</span>
+      <span>문의</span>
     </a>
     <a href="{{ url_for('main.password_lookup') }}" class="bottom-tabbar-item {% if request.endpoint == 'main.password_lookup' %}is-active{% endif %}">
       <span>비번</span>

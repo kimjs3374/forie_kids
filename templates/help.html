@@ -4,7 +4,7 @@
 <div class="app-tabs mb-4">
   <a href="{{ url_for('main.index') }}" class="app-tab">신청하기</a>
   <a href="{{ url_for('main.lookup') }}" class="app-tab">신청조회</a>
-  <a href="{{ url_for('main.payment_request') }}" class="app-tab">입금확인요청</a>
+  <a href="{{ url_for('main.payment_request') }}" class="app-tab">문의사항</a>
   <a href="{{ url_for('main.password_lookup') }}" class="app-tab">비밀번호</a>
   <a href="{{ url_for('main.help_page') }}" class="app-tab is-active">도움말</a>
 </div>
@@ -41,8 +41,8 @@
   <div class="col-md-6 col-xl-3">
     <a href="{{ url_for('main.payment_request') }}" class="help-shortcut-card">
       <div class="help-shortcut-label">문의 메뉴</div>
-      <div class="help-shortcut-title">입금확인요청</div>
-      <div class="help-shortcut-desc">자동 반영이 늦을 때 관리자에게 확인 요청을 남깁니다.</div>
+      <div class="help-shortcut-title">문의사항</div>
+      <div class="help-shortcut-desc">자동 반영이 늦거나 전달할 내용이 있을 때 관리자에게 문의를 남깁니다.</div>
     </a>
   </div>
   <div class="col-md-6 col-xl-3">
@@ -57,7 +57,7 @@
 <div class="help-anchor-list mb-4">
   <a href="#help-apply" class="help-anchor">예약 신청</a>
   <a href="#help-lookup" class="help-anchor">신청 조회</a>
-  <a href="#help-payment" class="help-anchor">입금확인요청</a>
+  <a href="#help-payment" class="help-anchor">문의사항</a>
   <a href="#help-password" class="help-anchor">비밀번호 조회</a>
   <a href="#help-notice" class="help-anchor">유의사항</a>
 </div>
@@ -96,10 +96,10 @@
 <section id="help-payment" class="surface-card help-section-card p-4 mb-4">
   <div class="help-section-header mb-3">
     <div>
-      <h2 class="section-title mb-1">3. 입금확인요청</h2>
-      <p class="section-desc mb-0">입금했는데 자동 반영이 늦거나 누락된 것 같을 때 사용하는 메뉴입니다.</p>
+      <h2 class="section-title mb-1">3. 문의사항</h2>
+      <p class="section-desc mb-0">입금 자동 반영이 늦거나 기타 문의가 있을 때 사용하는 메뉴입니다.</p>
     </div>
-    <a href="{{ url_for('main.payment_request') }}" class="btn btn-sm btn-outline-primary">입금확인요청으로 이동</a>
+    <a href="{{ url_for('main.payment_request') }}" class="btn btn-sm btn-outline-primary">문의사항으로 이동</a>
   </div>
   <ol class="help-step-list">
     <li><strong>기본 정보 입력</strong> : 이름, 연락처, 동/호수를 입력합니다.</li>

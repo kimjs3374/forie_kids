@@ -1,10 +1,9 @@
 {% extends 'base.html' %}
-{% block title %}입금확인요청 관리{% endblock %}
+{% block title %}문의사항 관리{% endblock %}
 {% block content %}
 <div class="surface-card p-4">
-  <div class="mb-4">
-    <h1 class="section-title mb-1">입금확인요청 관리</h1>
-    <p class="section-desc">사용자가 남긴 입금확인요청과 관리자 답변을 게시판처럼 누적 관리합니다.</p>
+    <h1 class="section-title mb-1">문의사항 관리</h1>
+    <p class="section-desc">사용자가 남긴 문의사항과 관리자 답변을 게시판처럼 누적 관리합니다.</p>
   </div>
   {% if threads %}
     {% for thread in threads|sort(attribute='latest_message_at', reverse=True) %}
@@ -40,7 +39,7 @@
     </div>
     {% endfor %}
   {% else %}
-  <div class="text-muted">접수된 입금확인요청이 없습니다.</div>
+  <div class="text-muted">접수된 문의사항이 없습니다.</div>
   {% endif %}
 </div>
 {% endblock %}

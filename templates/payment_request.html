@@ -3,7 +3,7 @@
 <div class="app-tabs mb-4">
   <a href="{{ url_for('main.index') }}" class="app-tab">신청하기</a>
   <a href="{{ url_for('main.lookup') }}" class="app-tab">신청조회</a>
-  <a href="{{ url_for('main.payment_request') }}" class="app-tab is-active">입금확인요청</a>
+  <a href="{{ url_for('main.payment_request') }}" class="app-tab is-active">문의사항</a>
   <a href="{{ url_for('main.password_lookup') }}" class="app-tab">비밀번호</a>
   <a href="{{ url_for('main.help_page') }}" class="app-tab">도움말</a>
 </div>
@@ -11,8 +11,8 @@
 <div class="row justify-content-center">
   <div class="col-xl-9">
     <div class="surface-card p-4 p-lg-5 mb-4">
-      <h1 class="section-title mb-1">입금확인요청</h1>
-      <p class="section-desc mb-4">동/호수, 이름, 연락처와 요청 내용을 남기면 관리자가 확인 후 답변을 남깁니다.</p>
+      <h1 class="section-title mb-1">문의사항</h1>
+      <p class="section-desc mb-4">동/호수, 이름, 연락처와 문의 내용을 남기면 관리자가 확인 후 답변을 남깁니다.</p>
       <form method="post">
         {{ form.hidden_tag() }}
         <div class="row g-3">
@@ -33,7 +33,7 @@
           </div>
         </div>
         <div class="mt-4 d-grid gap-2 d-md-flex">
-          <button type="submit" name="action" value="submit" class="btn btn-primary flex-fill js-consent-submit" disabled>입금확인요청</button>
+          <button type="submit" name="action" value="submit" class="btn btn-primary flex-fill js-consent-submit" disabled>문의사항 등록</button>
           <button type="submit" name="action" value="lookup" class="btn btn-outline-primary flex-fill" formnovalidate>답변조회</button>
         </div>
       </form>
@@ -64,7 +64,7 @@
         </div>
         {% endfor %}
       {% else %}
-      <div class="text-muted">등록된 입금확인요청 기록이 없습니다.</div>
+      <div class="text-muted">등록된 문의사항 기록이 없습니다.</div>
       {% endif %}
     </div>
     {% endif %}

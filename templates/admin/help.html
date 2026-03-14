@@ -39,8 +39,8 @@
   <div class="col-md-6 col-xl-4">
     <a href="{{ url_for('admin.payment_requests') }}" class="help-shortcut-card">
       <div class="help-shortcut-label">관리 메뉴</div>
-      <div class="help-shortcut-title">입금확인요청</div>
-      <div class="help-shortcut-desc">사용자 요청글을 확인하고 답변을 남깁니다.</div>
+      <div class="help-shortcut-title">문의사항</div>
+      <div class="help-shortcut-desc">사용자 문의글을 확인하고 답변을 남깁니다.</div>
     </a>
   </div>
   <div class="col-md-6 col-xl-4">
@@ -58,7 +58,7 @@
   <a href="#admin-months" class="help-anchor">예약생성</a>
   <a href="#admin-reservations" class="help-anchor">예약관리</a>
   <a href="#admin-bank" class="help-anchor">은행연동</a>
-  <a href="#admin-payment-requests" class="help-anchor">입금확인요청</a>
+  <a href="#admin-payment-requests" class="help-anchor">문의사항</a>
   <a href="#admin-passwords" class="help-anchor">비번관리</a>
   <a href="#admin-tips" class="help-anchor">운영 팁</a>
 </div>
@@ -147,10 +147,10 @@
 <section id="admin-payment-requests" class="surface-card help-section-card p-4 mb-4">
   <div class="help-section-header mb-3">
     <div>
-      <h2 class="section-title mb-1">6. 입금확인요청 관리</h2>
-      <p class="section-desc mb-0">사용자가 남긴 요청과 관리자 답변을 스레드 형태로 관리합니다.</p>
+      <h2 class="section-title mb-1">6. 문의사항 관리</h2>
+      <p class="section-desc mb-0">사용자가 남긴 문의와 관리자 답변을 스레드 형태로 관리합니다.</p>
     </div>
-    <a href="{{ url_for('admin.payment_requests') }}" class="btn btn-sm btn-outline-primary">입금확인요청 열기</a>
+    <a href="{{ url_for('admin.payment_requests') }}" class="btn btn-sm btn-outline-primary">문의사항 열기</a>
   </div>
   <ul class="help-step-list">
     <li><strong>스레드 목록</strong> : 사용자별 요청을 최근 업데이트 순으로 확인합니다.</li>
@@ -184,7 +184,7 @@
   </div>
   <ul class="help-step-list">
     <li><strong>도움말 노출 방식</strong> : 사용자용 도움말은 모든 페이지 하단 <strong>도움말</strong> 링크에서 볼 수 있고, 관리자용 도움말은 로그인 후 상단 관리자 메뉴에서만 보입니다.</li>
-    <li><strong>입금 처리 순서</strong> : 자동 매칭이 안 된 건은 먼저 은행연동에서 확인한 뒤, 필요하면 예약관리/입금확인요청과 함께 대조하는 것이 좋습니다.</li>
+    <li><strong>입금 처리 순서</strong> : 자동 매칭이 안 된 건은 먼저 은행연동에서 확인한 뒤, 필요하면 예약관리/문의사항과 함께 대조하는 것이 좋습니다.</li>
     <li><strong>전광판 운영</strong> : 실제 공지성 문구와 입금자 찾기 문구가 함께 노출될 수 있으므로, 오래된 내용은 정리해두는 것이 좋습니다.</li>
     <li><strong>로그아웃</strong> : 상단 로그아웃 버튼으로 세션을 종료하면 관리자 전용 메뉴와 도움말은 더 이상 보이지 않습니다.</li>
   </ul>

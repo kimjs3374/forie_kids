@@ -39,7 +39,7 @@ def payment_request():
                         flash(first_error[0], "danger")
         elif form.validate_on_submit():
             if not (form.content.data or "").strip():
-                flash("입금확인요청 내용을 입력해주세요.", "danger")
+                flash("문의사항 내용을 입력해주세요.", "danger")
             else:
                 create_payment_request(
                     form.name.data,
@@ -49,7 +49,7 @@ def payment_request():
                     form.content.data,
                     bool(form.consent_agreed.data),
                 )
-                flash("입금확인요청이 접수되었습니다. 관리자가 확인 후 답변을 남깁니다.", "success")
+                flash("문의사항이 접수되었습니다. 관리자가 확인 후 답변을 남깁니다.", "success")
                 threads = list_payment_requests(
                     form.name.data,
                     form.phone.data,

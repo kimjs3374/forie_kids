@@ -153,7 +153,7 @@ class PaymentRequestForm(ApartmentValidationMixin, FlaskForm):
     apt_ho = StringField("호수", validators=[DataRequired(), Length(max=10)])
     content = TextAreaField("내용", validators=[Length(max=1000)])
     consent_agreed = BooleanField("개인정보 수집 및 이용 동의", validators=[DataRequired()])
-    submit = SubmitField("입금확인요청")
+    submit = SubmitField("문의사항 등록")
 
 
 class PaymentRequestReplyForm(FlaskForm):

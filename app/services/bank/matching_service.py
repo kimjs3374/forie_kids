@@ -2,6 +2,9 @@ import hashlib
 import json
 from datetime import datetime, timezone
 
+from flask import current_app
+
+from ..reservation.notification_service import send_telegram_auto_payment_confirmed_alert
 from ..shared import KST, format_kst_datetime, parse_iso_datetime, split_apt_unit
 from ..supabase_service import fetch_rows, insert_row, patch_rows
 
@@ -58,6 +61,13 @@ def _fetch_pending_reservations():
 def _fetch_month_order_map():
     return {
         item["id"]: item.get("target_month") or "9999-99"
+        for item in fetch_rows("reservation_months", params={"select": "id,target_month"})
+    }
+
+
+def _fetch_month_map():
+    return {
+        item["id"]: item
         for item in fetch_rows("reservation_months", params={"select": "id,target_month"})
     }
 
@@ -175,6 +185,25 @@ def _log_match(transaction_id, reservation_id, match_type, result, reason, creat
     )
 
 
+def _send_auto_match_notifications(reservations, month_map):
+    for reservation in reservations:
+        apt_unit = str(reservation.get("apt_unit") or "")
+        dong, ho = split_apt_unit(apt_unit)
+        month = month_map.get(reservation.get("month_id"), {})
+        try:
+            send_telegram_auto_payment_confirmed_alert(
+                month.get("target_month"),
+                dong,
+                ho,
+                reservation.get("name") or "",
+            )
+        except Exception:
+            current_app.logger.exception(
+                "자동 입금확인 텔레그램 알림 전송 실패 | reservation_id=%s",
+                reservation.get("id"),
+            )
+
+
 def _apply_match(transaction, reservations, match_type, reason, created_by_admin_id=None):
     reservation_list = reservations if isinstance(reservations, list) else [reservations]
     if not reservation_list:
@@ -260,6 +289,7 @@ def auto_match_pending_transactions(transaction_ids=None):
     transactions = fetch_rows("bank_transactions", params=params)
     pending_reservations = _fetch_pending_reservations()
     month_order_map = _fetch_month_order_map()
+    month_map = _fetch_month_map()
     matched_count = 0
     unmatched_count = 0
 
@@ -285,6 +315,7 @@ def auto_match_pending_transactions(transaction_ids=None):
                 "BUNDLE": "자동 묶음 입금 매칭",
             }.get(strategy, "자동 매칭 성공")
             _apply_match(transaction, best_match["reservations"], match_type="AUTO", reason=reason)
+            _send_auto_match_notifications(best_match["reservations"], month_map)
             matched_ids = {reservation["id"] for reservation in best_match["reservations"]}
             pending_reservations = [item for item in pending_reservations if item.get("id") not in matched_ids]
             matched_count += len(best_match["reservations"])
