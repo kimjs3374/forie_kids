@@ -76,6 +76,7 @@
     <li><strong>자동 입금 확인 현황</strong> : 은행연동 활성 상태, 자동매칭 수, 미매칭 수, 최근 오류를 빠르게 점검합니다.</li>
     <li><strong>예약현황</strong> : 월별 정원, 신청 수, 완료 수, 현재 상태를 한 번에 확인합니다.</li>
     <li><strong>최근 예약</strong> : 최신 접수 내역과 입금 확인 여부를 간단히 확인합니다.</li>
+    <li><strong>텔레그램 바로가기</strong> : 상단 <strong>텔레그램</strong> 버튼을 누르면 새 창에서 운영용 텔레그램 링크로 바로 이동합니다. 버튼은 <code>.env</code>의 <code>ADMIN_TELEGRAM_URL</code> 값이 있을 때만 표시됩니다.</li>
   </ul>
 </section>
 
@@ -190,6 +191,7 @@
     <li><strong>도움말 노출 방식</strong> : 사용자용 도움말은 모든 페이지 하단 <strong>도움말</strong> 링크에서 볼 수 있고, 관리자용 도움말은 로그인 후 상단 관리자 메뉴에서만 보입니다.</li>
     <li><strong>입금 처리 순서</strong> : 자동 매칭이 안 된 건은 먼저 은행연동에서 확인한 뒤, 필요하면 예약관리/문의사항과 함께 대조하는 것이 좋습니다.</li>
     <li><strong>전광판 운영</strong> : 실제 공지성 문구와 입금자 찾기 문구가 함께 노출될 수 있으므로, 오래된 내용은 정리해두는 것이 좋습니다.</li>
+    <li><strong>텔레그램 버튼 설정</strong> : 관리자 상단 텔레그램 버튼은 <code>.env</code>에 <code>ADMIN_TELEGRAM_URL=https://t.me/...</code> 형식으로 추가하면 활성화됩니다. 변경 후에는 앱을 재시작해 반영하세요.</li>
     <li><strong>로그아웃</strong> : 상단 로그아웃 버튼으로 세션을 종료하면 관리자 전용 메뉴와 도움말은 더 이상 보이지 않습니다.</li>
   </ul>
 </section>

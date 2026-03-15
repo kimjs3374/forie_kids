@@ -3,8 +3,13 @@
 {% block content %}
 <div class="surface-card admin-hero admin-hero-compact p-4 mb-4">
   <div class="d-flex flex-column gap-2">
+    <div class="d-flex flex-wrap align-items-start justify-content-between gap-2">
+      <span class="hero-badge bg-white text-primary">운영 대시보드</span>
+      {% if admin_telegram_url %}
+      <a class="hero-badge bg-white text-primary text-decoration-none ms-auto" href="{{ admin_telegram_url }}" target="_blank" rel="noopener noreferrer">텔레그램</a>
+      {% endif %}
+    </div>
     <div>
-      <span class="hero-badge bg-white text-primary mb-2">운영 대시보드</span>
       <h1 class="hero-title fs-3 text-white mb-2">포리에 실내놀이터 관리센터</h1>
       <p class="mb-0 text-white-50">공지, 예약 월, 슬롯, 예약 상태를 한 화면에서 관리할 수 있습니다.</p>
     </div>
@@ -18,7 +23,7 @@
       <p class="section-desc mb-3">입주민 메인 화면 상단에 노출되는 운영 공지를 수정합니다.</p>
         <form method="post" class="mt-3">
           {{ notice_form.hidden_tag() }}
-          <div class="mb-3">{{ notice_form.notice_text(class='form-control', rows='13') }}</div>
+          <div class="mb-3">{{ notice_form.notice_text(class='form-control', rows='14') }}</div>
           {{ notice_form.submit(class='btn btn-primary') }}
         </form>
     </div>

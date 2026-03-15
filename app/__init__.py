@@ -1,7 +1,9 @@
 from datetime import datetime, timedelta
+from pathlib import Path
+import re
 
 import click
-from flask import Flask
+from flask import Flask, Response
 from werkzeug.security import generate_password_hash
 
 from config import Config, validate_security_settings
@@ -10,10 +12,22 @@ from .services.bank import sync_bank_transactions
 from .services.cleanup import delete_expired_personal_data
 
 
+def _normalize_adsense_meta(value):
+    raw = (value or "").strip()
+    if not raw:
+        return ""
+
+    match = re.search(r'content=["\']([^"\']+)["\']', raw, re.IGNORECASE)
+    if match:
+        return match.group(1).strip()
+    return raw
+
+
 def create_app():
     app = Flask(__name__, template_folder="../templates", static_folder="static")
     app.config.from_object(Config)
     app.permanent_session_lifetime = timedelta(minutes=app.config["ADMIN_SESSION_TIMEOUT_MINUTES"])
+    app_root = Path(app.root_path).parent
 
     app.config["TEMPLATES_AUTO_RELOAD"] = True
 
@@ -30,7 +44,20 @@ def create_app():
             "footer_contact": app.config.get("FOOTER_CONTACT") or "연락처 정보 준비중",
             "footer_copyright": app.config.get("FOOTER_COPYRIGHT")
             or f"© {datetime.now().year} {company_name}. All rights reserved.",
+            "adsense_client_id": (app.config.get("ADSENSE_CLIENT_ID") or "").strip(),
+            "adsense_verification_meta": _normalize_adsense_meta(app.config.get("ADSENSE_VERIFICATION_META")),
+            "adsense_head_html": (app.config.get("ADSENSE_HEAD_HTML") or "").strip(),
+            "admin_telegram_url": (app.config.get("ADMIN_TELEGRAM_URL") or "").strip(),
         }
+
+    @app.get("/ads.txt")
+    def ads_txt():
+        ads_file = app_root / "Ads.txt"
+        if not ads_file.exists():
+            ads_file = app_root / "ads.txt"
+        if not ads_file.exists():
+            return Response("", status=404, mimetype="text/plain")
+        return Response(ads_file.read_text(encoding="utf-8"), mimetype="text/plain")
 
     if app.config.get("AUTO_ENSURE_NEXT_MONTH_ON_REQUESTS"):
         @app.before_request
