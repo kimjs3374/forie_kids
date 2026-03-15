@@ -4,7 +4,7 @@
 <div class="app-tabs mb-4">
   <a href="{{ url_for('main.index') }}" class="app-tab">신청하기</a>
   <a href="{{ url_for('main.lookup') }}" class="app-tab">신청조회</a>
-  <a href="{{ url_for('main.payment_request') }}" class="app-tab">문의사항</a>
+  <a href="{{ url_for('main.inquiry') }}" class="app-tab">문의사항</a>
   <a href="{{ url_for('main.password_lookup') }}" class="app-tab">비밀번호</a>
   <a href="{{ url_for('main.help_page') }}" class="app-tab is-active">도움말</a>
 </div>
@@ -39,10 +39,10 @@
     </a>
   </div>
   <div class="col-md-6 col-xl-3">
-    <a href="{{ url_for('main.payment_request') }}" class="help-shortcut-card">
+    <a href="{{ url_for('main.inquiry') }}" class="help-shortcut-card">
       <div class="help-shortcut-label">문의 메뉴</div>
       <div class="help-shortcut-title">문의사항</div>
-      <div class="help-shortcut-desc">자동 반영이 늦거나 전달할 내용이 있을 때 관리자에게 문의를 남깁니다.</div>
+      <div class="help-shortcut-desc">입금확인이 늦거나 입금한 예금주가 다른경우 전달할 내용이 있을 때 관리자에게 문의를 남깁니다.</div>
     </a>
   </div>
   <div class="col-md-6 col-xl-3">
@@ -73,7 +73,9 @@
   <ol class="help-step-list">
     <li><strong>신청 대상 월 선택</strong> : 메인 화면에서 원하는 월 카드를 눌러 현재 접수 가능한 월을 선택합니다.</li>
     <li><strong>신청서 작성</strong> : 이름, 동/호수, 연락처, 아이 인원수 등 필수 정보를 입력하고 개인정보 동의를 완료합니다.</li>
-    <li><strong>신청 접수</strong> : 신청이 완료되면 상태는 먼저 <strong>예약대기</strong>로 등록됩니다.</li>
+    <li><strong>신청 완료 안내 확인</strong> : 신청이 완료되면 신청 월, 동/호수, 이름, 아이 인원수, 입금해야 할 금액, 계좌번호 안내가 모달로 표시됩니다.</li>
+    <li><strong>입금 주의사항</strong> : 계좌 이체 시 <strong>예금주명이 예약자명과 동일해야</strong> 입금 확인이 원활합니다. 계좌번호 복사 버튼이 동작하지 않으면 숫자 입력칸을 길게 눌러 직접 복사할 수 있습니다.</li>
+    <li><strong>상태 처리</strong> : 이용금액이 0원보다 크면 상태는 먼저 <strong>예약대기</strong>로 등록되고, 이용금액이 <strong>0원인 월은 자동으로 예약완료</strong> 처리됩니다.</li>
     <li><strong>입금 확인 후 이용</strong> : 관리사무소 입금 확인이 끝나면 해당 월은 날짜 지정 없이 자유롭게 이용할 수 있습니다.</li>
   </ol>
 </section>
@@ -88,7 +90,7 @@
   </div>
   <ol class="help-step-list">
     <li><strong>입력 정보</strong> : 이름, 연락처, 동, 호수를 신청 당시와 동일하게 입력합니다.</li>
-    <li><strong>확인 가능 항목</strong> : 예약월, 현재 상태, 입금확인 여부, 입금확인일, 신청일시를 확인할 수 있습니다.</li>
+    <li><strong>확인 가능 항목</strong> : 예약월, 현재 상태, 입금확인 여부, 입금확인일, 신청일시, 예약 금액을 확인할 수 있습니다.</li>
     <li><strong>조회가 안 될 때</strong> : 이름/연락처/동호수 중 하나라도 다르면 조회되지 않을 수 있으니 다시 확인해주세요.</li>
   </ol>
 </section>
@@ -97,15 +99,15 @@
   <div class="help-section-header mb-3">
     <div>
       <h2 class="section-title mb-1">3. 문의사항</h2>
-      <p class="section-desc mb-0">입금 자동 반영이 늦거나 기타 문의가 있을 때 사용하는 메뉴입니다.</p>
+      <p class="section-desc mb-0">입금 확인 반영이 늦거나 기타 문의가 있을 때 사용하는 메뉴입니다.</p>
     </div>
-    <a href="{{ url_for('main.payment_request') }}" class="btn btn-sm btn-outline-primary">문의사항으로 이동</a>
+    <a href="{{ url_for('main.inquiry') }}" class="btn btn-sm btn-outline-primary">문의사항으로 이동</a>
   </div>
   <ol class="help-step-list">
     <li><strong>기본 정보 입력</strong> : 이름, 연락처, 동/호수를 입력합니다.</li>
     <li><strong>요청 내용 작성</strong> : 입금 날짜, 입금자명, 요청 내용을 자세히 적어주시면 관리자가 확인하기 쉽습니다.</li>
     <li><strong>답변 조회</strong> : 같은 화면에서 <strong>답변조회</strong> 버튼을 누르면 내가 남긴 요청과 관리자 답변을 함께 볼 수 있습니다.</li>
-    <li><strong>자동 반영 지연</strong> : 자동 입금 수집이 즉시 반영되지 않을 수 있으므로 일정 시간 후 다시 확인해보시는 것을 권장합니다.</li>
+    <li><strong>입금 반영 지연</strong> : 입금 확인은 수동으로 반영되므로 일정 시간 후 다시 확인해보시는 것을 권장합니다.</li>
   </ol>
 </section>
 
@@ -119,7 +121,7 @@
   </div>
   <ol class="help-step-list">
     <li><strong>입력 정보</strong> : 이름, 연락처, 동/호수를 신청 정보와 동일하게 입력합니다.</li>
-    <li><strong>조회 조건</strong> : 해당 월 예약이 완료되어 있어야 하고, 관리자가 월별 비밀번호를 등록해 두어야 합니다.</li>
+    <li><strong>조회 조건</strong> : 해당 월 예약이 완료되어 있어야 하고, 관리자가 월별 비밀번호를 등록해 두어야 합니다. 0원 월은 신청 직후 자동 완료될 수 있습니다.</li>
     <li><strong>출력 내용</strong> : 해당 월 입장 비밀번호와 입금확인일을 확인할 수 있습니다.</li>
   </ol>
 </section>
@@ -134,7 +136,8 @@
   <ul class="help-step-list">
     <li><strong>공지 확인</strong> : 메인 화면 상단 공지와 전광판에서 운영 안내, 입금자 확인 요청 내용을 수시로 확인해주세요.</li>
     <li><strong>입금 순서</strong> : 반드시 예약 신청을 먼저 완료한 뒤 입금해주세요.</li>
-    <li><strong>자동 입금 확인 시간</strong> : 자동 동기화는 <strong>02:00~07:00를 제외한 시간대</strong>에 주기적으로 진행됩니다.</li>
+    <li><strong>이용금액 기준</strong> : 이용금액은 월마다 다를 수 있으며, 신청 완료 안내와 신청조회에서 다시 확인할 수 있습니다.</li>
+    <!--<li><strong>자동 입금 확인 시간</strong> : 자동 동기화는 <strong>02:00~07:00를 제외한 시간대</strong>에 주기적으로 진행됩니다.</li>-->
     <li><strong>개인정보 보관</strong> : 성명, 동/호수, 연락처 정보는 예약 및 입금 확인, 상태 안내를 위해 사용되며 시설 이용 완료 후 12개월 보관됩니다.</li>
     <li><strong>도움말 위치</strong> : 이 페이지는 홈페이지 하단 <strong>도움말</strong> 링크에서 언제든 다시 열 수 있습니다.</li>
   </ul>

@@ -3,12 +3,45 @@
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content surface-card border-0">
       <div class="modal-header border-0 pb-0">
-        <h5 class="modal-title fw-bold">이용 신청이 접수되었습니다</h5>
+        <h5 class="modal-title fw-bold">예약이 성공적으로 신청되었습니다.</h5>
         <a href="{{ url_for('main.index', month_id=selected_month.id if selected_month else None) }}" class="btn-close"></a>
       </div>
       <div class="modal-body">
-        <p class="mb-2">신청 상태는 <strong>예약대기</strong>로 등록되었습니다.</p>
-        <p class="mb-0 text-muted">입금 확인이 완료되면 내 신청 조회 페이지에서 <strong>예약완료</strong> 및 입금확인일을 확인할 수 있습니다.</p>
+        {% set submit_info = reservation_submit_info or {} %}
+        <div class="mb-3">
+          <div class="fw-bold">{{ submit_info.target_month or (selected_month.target_month if selected_month else '') }}</div>
+          <div>{{ submit_info.apt_dong or '' }}동 {{ submit_info.apt_ho or '' }}호</div>
+          <div>{{ submit_info.name or '' }}님 아이 {{ submit_info.children_count or 0 }}명</div>
+        </div>
+        <div class="mb-3 p-3 rounded-3" style="background:#fff7ed; border:1px solid rgba(251,146,60,.28);">
+          <div class="small text-muted mb-1">입금해야 할 금액</div>
+          <div class="fw-bold fs-4 text-warning-emphasis">{{ '{:,}'.format(submit_info.payment_amount or 0) }}원</div>
+        </div>
+        <p class="mb-2">입금이 확인되면 최종적으로 예약이 확정됩니다.</p>
+        <p class="mb-3 text-danger fw-bold">예금주명이 예약자명과 동일해야 합니다.</p>
+
+        {% if submit_info.has_bank_account %}
+        <div class="p-3 rounded-3" style="background:#f8fafc; border:1px solid rgba(148,163,184,.25);">
+          <div class="fw-bold mb-2">계좌번호 안내</div>
+          <div class="mb-1">{{ submit_info.bank_name }}</div>
+          <div class="fw-bold fs-5 mb-2">{{ submit_info.account_number }}</div>
+          <div class="text-muted small mb-3">(예금주 : {{ submit_info.account_holder_name }})</div>
+          <div class="input-group input-group-sm mb-2">
+            <input
+              type="text"
+              class="form-control js-copy-account-number-input"
+              value="{{ (submit_info.account_number or '')|replace('-', '') }}"
+              readonly
+              inputmode="numeric"
+              aria-label="복사용 계좌번호"
+            >
+            <button type="button" class="btn btn-outline-primary js-copy-account-number" data-account-number="{{ submit_info.account_number }}">계좌번호 복사</button>
+          </div>
+          <div class="small text-muted">복사가 안되면 위 숫자를 길게 눌러 직접 복사해주세요.</div>
+        </div>
+        {% else %}
+        <p class="mb-0 text-muted">계좌번호는 관리사무소 안내에 따라 입금해주세요.</p>
+        {% endif %}
       </div>
       <div class="modal-footer border-0">
         <a href="{{ url_for('main.lookup') }}" class="btn btn-outline-primary">내 신청 조회</a>

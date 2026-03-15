@@ -10,10 +10,10 @@
         <form method="post" class="mt-2">
           {{ form.hidden_tag() }}
           {{ form.slot_id() }}
-          <div class="mb-3">{{ form.name.label(class='form-label') }}{{ form.name(class='form-control') }}</div>
+          <div class="mb-3">{{ form.name.label(class='form-label') }}{{ form.name(class='form-control',placeholder='이름을 입력해 주세요') }}</div>
           <div class="row g-3">
-            <div class="col-6">{{ form.apt_dong.label(class='form-label') }}{{ form.apt_dong(class='form-control', placeholder='301') }}</div>
-            <div class="col-6">{{ form.apt_ho.label(class='form-label') }}{{ form.apt_ho(class='form-control', placeholder='1203') }}</div>
+            <div class="col-6">{{ form.apt_dong.label(class='form-label') }}{{ form.apt_dong(class='form-control', placeholder='동을 입력해 주세요') }}</div>
+            <div class="col-6">{{ form.apt_ho.label(class='form-label') }}{{ form.apt_ho(class='form-control', placeholder='호수를 입력해 주세요') }}</div>
           </div>
           <div class="mb-3">{{ form.phone.label(class='form-label') }}{{ form.phone(class='form-control', placeholder='010-1234-5678', inputmode='numeric') }}</div>
           <div class="mb-3">{{ form.children_count.label(class='form-label') }}{{ form.children_count(class='form-control') }}</div>

@@ -1,19 +1,19 @@
 """Backward-compatible reservation service facade."""
 
 from .reservation.content_service import get_active_ticker_messages, get_notice_text
+from .reservation.inquiry_service import (
+    _build_request_key,
+    _format_thread,
+    add_inquiry_reply,
+    create_inquiry,
+    inquiry_status_label,
+    list_inquiries,
+)
 from .reservation.month_service import get_months_with_slots
 from .reservation.notification_service import (
     _send_telegram_message,
-    send_telegram_deposit_request_alert as _send_telegram_deposit_request_alert,
+    send_telegram_inquiry_alert as _send_telegram_inquiry_alert,
     send_telegram_reservation_alert as _send_telegram_reservation_alert,
-)
-from .reservation.payment_request_service import (
-    _build_request_key,
-    _format_thread,
-    add_payment_request_reply,
-    create_payment_request,
-    list_payment_requests,
-    payment_request_status_label,
 )
 from .reservation.reservation_record_service import create_reservation, lookup_month_password, lookup_my_reservations
 from .shared import (
@@ -27,3 +27,10 @@ from .shared import (
     split_apt_unit,
     status_label,
 )
+
+# Backward-compatible aliases
+_send_telegram_deposit_request_alert = _send_telegram_inquiry_alert
+add_payment_request_reply = add_inquiry_reply
+create_payment_request = create_inquiry
+list_payment_requests = list_inquiries
+payment_request_status_label = inquiry_status_label

@@ -30,7 +30,9 @@ def index():
             form.slot_id.data = str(active_slots[0]["id"])
 
     if form.validate_on_submit():
-        success, message = create_reservation(form)
+        success, message, reservation_submit_info = create_reservation(form)
+        if success and reservation_submit_info:
+            session["reservation_submit_info"] = reservation_submit_info
         flash(message, "success" if success else "danger")
         return redirect(url_for("main.index", month_id=form.month_id.data, submitted=1 if success else 0))
     if request.method == "POST":
@@ -59,6 +61,7 @@ def index():
         form=form,
         lookup_form=lookup_form,
         submitted=request.args.get("submitted") == "1",
+        reservation_submit_info=session.pop("reservation_submit_info", None),
         apt_validation_error=apt_validation_error,
     )
 

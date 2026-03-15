@@ -6,3 +6,5 @@ __pycache__/
 instance/
 kids.db
 *.xlsx
+logs/
+cleanup_expired_data.log

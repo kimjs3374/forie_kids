@@ -6,7 +6,6 @@
     <div class="surface-card p-4">
         <h1 class="section-title mb-1">예약 생성</h1>
         <p class="section-desc small">매월 1일에는 다음달 예약이 자동 생성되며, 비밀번호는 항상 중복 없는 4자리 랜덤 숫자로 생성됩니다.</p>
-        <div class="alert alert-info border-0 mb-3">현재 예약금액은 <b>{{ '{:,}'.format(bank_payment_amount) }}원</b>이며, <b>은행연동</b> 화면에서 변경합니다.</div>
         <form method="post">
           {{ form.hidden_tag() }}
           <div class="row g-3 mb-3">
@@ -16,6 +15,7 @@
           <div class="mb-3">{{ form.title.label(class='form-label') }}{{ form.title(class='form-control') }}</div>
           <div class="mb-3">{{ form.open_date.label(class='form-label') }}{{ form.open_date(class='form-control') }}</div>
           <div class="mb-3">{{ form.close_date.label(class='form-label') }}{{ form.close_date(class='form-control') }}</div>
+          <div class="mb-3">{{ form.payment_amount.label(class='form-label') }}{{ form.payment_amount(class='form-control') }}</div>
           <div class="mb-3">{{ form.capacity.label(class='form-label') }}{{ form.capacity(class='form-control') }}</div>
           {{ form.submit(class='btn btn-primary w-100') }}
         </form>
@@ -25,64 +25,89 @@
     <div class="surface-card p-4">
         <h2 class="section-title mb-1">등록된 예약 월</h2>
         <p class="section-desc mb-3">자동 생성 월은 다음달 기준으로 만들어지며, 오픈일은 당월 20일 00:00 / 마감일은 다음달 15일 23:59로 설정됩니다.</p>
-        <div class="table-responsive mt-3">
-          <table class="table table-modern align-middle">
-            <thead>
-              <tr><th>월</th><th>제목</th><th>정원</th><th>입장비밀번호</th><th>오픈</th><th>마감</th><th>자동상태</th><th>관리</th></tr>
-            </thead>
-            <tbody>
-              {% for month in months %}
-              {% set month_parts = month.target_month.split('-') %}
-              {% set selected_year = month_parts[0]|int %}
-              {% set selected_month = month_parts[1]|int %}
-              <tr>
-                <td>{{ month.target_month }}</td>
-                <td>{{ month.title or '-' }}</td>
-                <td>{{ month.capacity }}</td>
-                <td>{{ month.access_password or '-' }}</td>
-                <td>{{ month.open_at[:10] }} 00:00</td>
-                <td>{{ month.close_at[:10] }} 23:59</td>
-                <td><span class="status-badge status-{{ month.status|lower }}">{{ month.status_label }}</span></td>
-                <td>
-                  <div class="d-grid gap-2">
-                    <button class="btn btn-sm btn-outline-secondary w-100" type="button" data-bs-toggle="collapse" data-bs-target="#edit-month-{{ month.id }}">수정</button>
-                    <div class="collapse" id="edit-month-{{ month.id }}">
-                      <form method="post" action="{{ url_for('admin.edit_month', month_id=month.id) }}" class="mt-2 p-2 border rounded-4 bg-light-subtle">
-                        {{ form.csrf_token }}
-                        <div class="row g-2 mb-2">
-                          <div class="col-6">
-                            <select name="target_year" class="form-select form-select-sm">
-                              {% for value, label in form.target_year.choices %}
-                              <option value="{{ value }}" {% if value == selected_year %}selected{% endif %}>{{ label }}</option>
-                              {% endfor %}
-                            </select>
-                          </div>
-                          <div class="col-6">
-                            <select name="target_month_num" class="form-select form-select-sm">
-                              {% for value, label in form.target_month_num.choices %}
-                              <option value="{{ value }}" {% if value == selected_month %}selected{% endif %}>{{ label }}</option>
-                              {% endfor %}
-                            </select>
-                          </div>
-                        </div>
-                        <div class="mb-2">{{ form.title(class='form-control form-control-sm', value=month.title or '') }}</div>
-                        <div class="mb-2">{{ form.open_date(class='form-control form-control-sm', value=month.open_at[:10]) }}</div>
-                        <div class="mb-2">{{ form.close_date(class='form-control form-control-sm', value=month.close_at[:10]) }}</div>
-                        <div class="mb-2">{{ form.capacity(class='form-control form-control-sm', value=month.capacity) }}</div>
-                        <button class="btn btn-sm btn-outline-secondary w-100" type="submit">월 정보 수정 저장</button>
-                      </form>
+        <div class="d-flex flex-column gap-3 mt-3">
+          {% for month in months %}
+          {% set month_parts = month.target_month.split('-') %}
+          {% set selected_year = month_parts[0]|int %}
+          {% set selected_month = month_parts[1]|int %}
+          <div class="border rounded-4 p-3 bg-light-subtle">
+            <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+              <div>
+                <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+                  <div class="fw-bold fs-5">{{ month.target_month }}</div>
+                  <span class="status-badge status-{{ month.status|lower }}">{{ month.status_label }}</span>
+                </div>
+                <div class="text-muted small mb-1">{{ month.title or '-' }}</div>
+                <div class="small">예약금액 <strong>{{ '{:,}'.format(month.payment_amount if month.payment_amount is not none else 5000) }}원</strong></div>
+                <div class="small">정원 {{ month.capacity }}명 · 입장비밀번호 {{ month.access_password or '-' }}</div>
+                <div class="small text-muted">오픈 {{ month.open_at[:10] }} 00:00 · 마감 {{ month.close_at[:10] }} 23:59</div>
+              </div>
+              <div class="d-flex flex-column gap-2" style="min-width: 120px;">
+                <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#editMonthModal-{{ month.id }}">수정</button>
+                <form method="post" action="{{ url_for('admin.remove_month', month_id=month.id) }}">
+                  <button class="btn btn-sm btn-outline-danger w-100" type="submit" onclick="return confirm('정말 이 예약 월을 삭제하시겠습니까?');">삭제</button>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal fade" id="editMonthModal-{{ month.id }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+              <div class="modal-content surface-card border-0">
+                <div class="modal-header border-0 pb-2">
+                  <h5 class="modal-title fw-bold">{{ month.target_month }} 예약 월 수정</h5>
+                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+                </div>
+                <div class="modal-body pt-0">
+                  <form method="post" action="{{ url_for('admin.edit_month', month_id=month.id) }}">
+                    {{ form.csrf_token }}
+                    <div class="row g-2 mb-3">
+                      <div class="col-6">
+                        <label class="form-label">년도</label>
+                        <select name="target_year" class="form-select">
+                          {% for value, label in form.target_year.choices %}
+                          <option value="{{ value }}" {% if value == selected_year %}selected{% endif %}>{{ label }}</option>
+                          {% endfor %}
+                        </select>
+                      </div>
+                      <div class="col-6">
+                        <label class="form-label">월</label>
+                        <select name="target_month_num" class="form-select">
+                          {% for value, label in form.target_month_num.choices %}
+                          <option value="{{ value }}" {% if value == selected_month %}selected{% endif %}>{{ label }}</option>
+                          {% endfor %}
+                        </select>
+                      </div>
                     </div>
-                    <form method="post" action="{{ url_for('admin.remove_month', month_id=month.id) }}">
-                      <button class="btn btn-sm btn-outline-danger w-100" type="submit" onclick="return confirm('정말 이 예약 월을 삭제하시겠습니까?');">삭제</button>
-                    </form>
-                  </div>
-                </td>
-              </tr>
-              {% else %}
-              <tr><td colspan="8" class="text-center text-muted">등록된 예약 월이 없습니다.</td></tr>
-              {% endfor %}
-            </tbody>
-          </table>
+                    <div class="mb-3">
+                      <label class="form-label">제목</label>
+                      {{ form.title(class='form-control', value=month.title or '') }}
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">오픈 날짜</label>
+                      {{ form.open_date(class='form-control', value=month.open_at[:10]) }}
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">마감 날짜</label>
+                      {{ form.close_date(class='form-control', value=month.close_at[:10]) }}
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">이용금액(원)</label>
+                      {{ form.payment_amount(class='form-control', value=(month.payment_amount if month.payment_amount is not none else 5000)) }}
+                    </div>
+                    <div class="mb-3">
+                      <label class="form-label">월별 신청 정원</label>
+                      {{ form.capacity(class='form-control', value=month.capacity) }}
+                    </div>
+                    <button class="btn btn-primary w-100" type="submit">월 정보 수정 저장</button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+          {% else %}
+          <div class="text-center text-muted py-4">등록된 예약 월이 없습니다.</div>
+          {% endfor %}
         </div>
     </div>
   </div>

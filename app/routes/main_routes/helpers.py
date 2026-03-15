@@ -4,6 +4,24 @@ def _get_apartment_validation_error(form):
     return (apt_dong_errors + apt_ho_errors)[0] if (apt_dong_errors or apt_ho_errors) else ""
 
 
+def _get_missing_required_fields_message(form, field_names):
+    missing_fields = []
+
+    for field_name in field_names:
+        field = getattr(form, field_name, None)
+        if not field:
+            continue
+
+        value = field.data
+        if value is None or (isinstance(value, str) and not value.strip()):
+            missing_fields.append(field.label.text)
+
+    if not missing_fields:
+        return ""
+
+    return f"입력되지 않은 항목을 확인해주세요: {', '.join(missing_fields)}"
+
+
 def _build_month_payload(month):
     return {
         "id": month["id"],

@@ -58,9 +58,9 @@ class ApartmentValidationMixin:
 class ReservationForm(ApartmentValidationMixin, FlaskForm):
     month_id = HiddenField(validators=[DataRequired()])
     slot_id = HiddenField()
-    name = StringField("이름", validators=[DataRequired(), Length(max=50)])
-    apt_dong = StringField("동", validators=[DataRequired(), Length(max=10)])
-    apt_ho = StringField("호수", validators=[DataRequired(), Length(max=10)])
+    name = StringField("이름", validators=[DataRequired(message="이름을 입력해주세요."), Length(max=50)])
+    apt_dong = StringField("동", validators=[DataRequired(message="동을 입력해주세요."), Length(max=10)])
+    apt_ho = StringField("호수", validators=[DataRequired(message="호수를 입력해주세요."), Length(max=10)])
     phone = StringField(
         "휴대폰번호",
         validators=[
@@ -162,6 +162,13 @@ class PaymentRequestReplyForm(FlaskForm):
     submit = SubmitField("답변 등록")
 
 
+class PaymentRequestMessageEditForm(FlaskForm):
+    message_id = HiddenField(validators=[DataRequired()])
+    thread_id = HiddenField(validators=[DataRequired()])
+    content = TextAreaField("수정 내용", validators=[DataRequired(), Length(max=1000)])
+    submit = SubmitField("수정 저장")
+
+
 class TickerMessageForm(FlaskForm):
     content = TextAreaField("전광판 문구", validators=[DataRequired(), Length(max=300)])
     display_seconds = IntegerField("노출시간(초)", validators=[InputRequired(), NumberRange(min=1, max=30)], default=3)
@@ -176,9 +183,7 @@ class BankSettingsForm(FlaskForm):
             ("NH", "농협은행 (NH)"),
             ("KB", "KB국민은행 (KB)"),
             ("WR", "우리은행 (WR)"),
-            ("SH", "신한은행 (SH)"),
-            ("HN", "하나은행 (HN)"),
-            ("IBK", "IBK기업은행 (IBK)"),
+            
         ],
         validators=[DataRequired()],
     )
@@ -191,9 +196,6 @@ class BankSettingsForm(FlaskForm):
     resident_number = StringField(
         "생년월일/사업자번호",
         validators=[Optional(), Length(min=6, max=10), Regexp(r"^[0-9]+$", message="숫자만 입력해주세요.")],
-    )
-    payment_amount = IntegerField(
-        "예약금액(원)", validators=[InputRequired(), NumberRange(min=0, max=10000000)], default=5000
     )
     is_active = BooleanField("자동 입금 확인 활성화", default=True)
     submit = SubmitField("은행 연동 저장")

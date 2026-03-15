@@ -1,5 +1,7 @@
 from datetime import datetime, timezone
 
+from flask import current_app
+
 from ..shared.crypto_service import decrypt_sensitive_value, encrypt_sensitive_value
 from ..supabase_service import fetch_rows, insert_row, patch_rows
 
@@ -50,6 +52,23 @@ def get_bank_code_label(bank_code):
     return BANK_CODE_LABELS.get(str(bank_code or "").upper(), str(bank_code or ""))
 
 
+def get_bank_setting_defaults_from_env():
+    bank_code = str(current_app.config.get("BANK_DEFAULT_CODE") or "NH").upper().strip() or "NH"
+    account_holder_name = str(current_app.config.get("BANK_DEFAULT_ACCOUNT_HOLDER_NAME") or "").strip()
+    account_number = str(current_app.config.get("BANK_DEFAULT_ACCOUNT_NUMBER") or "").strip()
+    payment_amount = _coerce_payment_amount(current_app.config.get("BANK_DEFAULT_PAYMENT_AMOUNT"))
+
+    return {
+        "bank_code": bank_code,
+        "bank_name": get_bank_code_label(bank_code),
+        "account_holder_name": account_holder_name,
+        "account_number": account_number,
+        "masked_account_number": _mask_account_number(account_number),
+        "payment_amount": payment_amount,
+        "from_env_defaults": True,
+    }
+
+
 def _fetch_bank_settings():
     return fetch_rows("bank_settings", params={"select": "*", "order": "id.asc"})
 
@@ -88,10 +107,7 @@ def get_active_bank_setting(include_decrypted=False):
 
 
 def get_configured_payment_amount():
-    setting = get_bank_setting(include_decrypted=False)
-    if not setting:
-        return DEFAULT_PAYMENT_AMOUNT
-    return _coerce_payment_amount(setting.get("payment_amount"))
+    return DEFAULT_PAYMENT_AMOUNT
 
 
 def save_bank_setting(
@@ -100,16 +116,13 @@ def save_bank_setting(
     account_number,
     account_password,
     resident_number,
-    payment_amount=DEFAULT_PAYMENT_AMOUNT,
     is_active=True,
 ):
     now = datetime.now(timezone.utc).isoformat()
     existing = get_bank_setting(include_decrypted=False)
-    previous_payment_amount = _coerce_payment_amount(existing.get("payment_amount")) if existing else DEFAULT_PAYMENT_AMOUNT
 
     normalized_account_number = _normalize_digits(account_number)
     normalized_resident_number = _normalize_digits(resident_number)
-    final_payment_amount = _coerce_payment_amount(payment_amount if payment_amount not in (None, "") else previous_payment_amount)
 
     if not existing and (not normalized_account_number or not str(account_password or "").strip() or not normalized_resident_number):
         raise ValueError("은행 연동에 필요한 계좌번호, 비밀번호, 생년월일/사업자번호를 모두 입력해주세요.")
@@ -126,7 +139,6 @@ def save_bank_setting(
         "resident_number_encrypted": encrypt_sensitive_value(normalized_resident_number)
         if normalized_resident_number
         else existing.get("resident_number_encrypted"),
-        "payment_amount": final_payment_amount,
         "is_active": bool(is_active),
         "updated_at": now,
     }
@@ -136,13 +148,6 @@ def save_bank_setting(
     else:
         payload["created_at"] = now
         insert_row("bank_settings", payload)
-
-    if final_payment_amount != previous_payment_amount:
-        patch_rows(
-            "reservations",
-            {"expected_amount": final_payment_amount, "updated_at": now},
-            params={"status": "eq.PENDING_PAYMENT"},
-        )
 
     return get_bank_setting(include_decrypted=True)
 

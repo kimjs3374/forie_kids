@@ -24,7 +24,6 @@
         {{ settings_form.hidden_tag() }}
         <div class="mb-3">{{ settings_form.bank_code.label(class='form-label') }}{{ settings_form.bank_code(class='form-select') }}</div>
         <div class="mb-3">{{ settings_form.account_holder_name.label(class='form-label') }}{{ settings_form.account_holder_name(class='form-control', placeholder='예금주명') }}</div>
-        <div class="mb-3">{{ settings_form.payment_amount.label(class='form-label') }}{{ settings_form.payment_amount(class='form-control') }}</div>
         <div class="mb-3">{{ settings_form.account_number.label(class='form-label') }}{{ settings_form.account_number(class='form-control', placeholder='처음 등록 또는 변경 시 입력') }}</div>
         <div class="mb-3">{{ settings_form.account_password.label(class='form-label') }}{{ settings_form.account_password(class='form-control', placeholder='비워두면 기존 값 유지') }}</div>
         <div class="small text-muted mb-3">계좌번호/계좌 비밀번호/생년월일(또는 사업자번호)을 비워두면 기존 암호화 저장 값을 유지합니다.</div>
@@ -37,7 +36,6 @@
         <div class="fw-bold mb-2">현재 저장된 계좌 정보</div>
         {% if bank_setting %}
         <div class="small text-muted">은행: {{ bank_setting.bank_name }}</div>
-        <div class="small text-muted">예약금액: {{ '{:,}'.format(bank_setting.payment_amount or 5000) }}원</div>
         <div class="small text-muted">계좌번호: {{ bank_setting.masked_account_number or '-' }}</div>
         <div class="small text-muted">생년월일/사업자번호: {{ bank_setting.masked_resident_number or '-' }}</div>
         <div class="small text-muted">최근 동기화: {{ bank_summary.last_synced_at_display or '없음' }}</div>
@@ -57,7 +55,6 @@
         <div class="col-sm-6 col-lg-3"><div class="hero-stat"><div class="hero-stat-label">미매칭</div><div class="hero-stat-value">{{ bank_summary.unmatched_count }}</div></div></div>
         <div class="col-sm-6 col-lg-3"><div class="hero-stat"><div class="hero-stat-label">전광판 승인</div><div class="hero-stat-value">{{ bank_summary.approved_billboard_count }}</div></div></div>
       </div>
-      <div class="small text-muted mt-3">현재 예약금액: {{ bank_summary.payment_amount_display }}</div>
       {% if bank_summary.is_sync_running %}
       <div class="alert alert-info mt-3 mb-0">현재 동기화가 실행 중입니다. 시작 시각: {{ bank_summary.running_sync_started_at_display or '-' }}</div>
       {% endif %}

@@ -31,16 +31,21 @@ def send_telegram_reservation_alert(target_month, apt_dong, apt_ho, name):
     _send_telegram_message(message)
 
 
-def send_telegram_deposit_request_alert(apt_dong, apt_ho, name, content):
+def send_telegram_inquiry_alert(apt_dong, apt_ho, name, content):
     message = (
         "[포리에 실내놀이터]\n\n"
         "****문의사항등록****\n\n"
         f"{apt_dong}동 {apt_ho}호 {name}님이 문의사항을 등록 하셨습니다.\n"
         "관리자 페이지 내 문의사항 확인바랍니다.\n\n"
         f"요청내용 : {content.strip()}\n\n"
-        "https://kids.forie.kr/forie_admin/payment-requests"
+        "https://kids.forie.kr/forie_admin/inquiries"
     )
     _send_telegram_message(message)
+
+
+def send_telegram_deposit_request_alert(apt_dong, apt_ho, name, content):
+    """Backward-compatible alias."""
+    send_telegram_inquiry_alert(apt_dong, apt_ho, name, content)
 
 
 def send_telegram_auto_payment_confirmed_alert(target_month, apt_dong, apt_ho, name):

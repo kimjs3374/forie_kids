@@ -37,7 +37,7 @@
     </a>
   </div>
   <div class="col-md-6 col-xl-4">
-    <a href="{{ url_for('admin.payment_requests') }}" class="help-shortcut-card">
+    <a href="{{ url_for('admin.inquiries') }}" class="help-shortcut-card">
       <div class="help-shortcut-label">관리 메뉴</div>
       <div class="help-shortcut-title">문의사항</div>
       <div class="help-shortcut-desc">사용자 문의글을 확인하고 답변을 남깁니다.</div>
@@ -58,7 +58,7 @@
   <a href="#admin-months" class="help-anchor">예약생성</a>
   <a href="#admin-reservations" class="help-anchor">예약관리</a>
   <a href="#admin-bank" class="help-anchor">은행연동</a>
-  <a href="#admin-payment-requests" class="help-anchor">문의사항</a>
+  <a href="#admin-inquiries" class="help-anchor">문의사항</a>
   <a href="#admin-passwords" class="help-anchor">비번관리</a>
   <a href="#admin-tips" class="help-anchor">운영 팁</a>
 </div>
@@ -104,10 +104,11 @@
     <a href="{{ url_for('admin.months') }}" class="btn btn-sm btn-outline-primary">예약생성 열기</a>
   </div>
   <ul class="help-step-list">
-    <li><strong>예약 월 생성</strong> : 연도, 월, 제목, 접수 시작일, 접수 마감일, 정원을 입력해 새 예약 월을 만듭니다.</li>
+    <li><strong>예약 월 생성</strong> : 연도, 월, 제목, 접수 시작일, 접수 마감일, <strong>월별 이용금액</strong>, 정원을 입력해 새 예약 월을 만듭니다.</li>
     <li><strong>자동 생성 기준</strong> : 시스템은 매월 1일에 다음달 예약을 자동 생성하도록 설계되어 있습니다.</li>
-    <li><strong>예약금액 기준</strong> : 현재 예약금액은 은행연동 화면의 설정 값을 기준으로 표시됩니다.</li>
-    <li><strong>수정/삭제</strong> : 이미 등록된 월은 펼침 영역에서 수정 저장할 수 있고, 필요하면 삭제도 가능합니다.</li>
+    <li><strong>이용금액 기본값</strong> : 새 월 생성 시 이용금액 기본값은 5,000원이며, 월마다 다르게 저장할 수 있습니다. <strong>0원도 허용</strong>됩니다.</li>
+    <li><strong>표시 방식 변경</strong> : 등록된 예약 월은 표가 아니라 우측 리스트 카드 형태로 표시되며, 각 월의 이용금액/정원/비밀번호/오픈·마감일을 한눈에 볼 수 있습니다.</li>
+    <li><strong>수정/삭제</strong> : 이미 등록된 월은 <strong>수정 버튼을 눌러 모달</strong>에서 변경할 수 있고, 필요하면 삭제도 가능합니다.</li>
   </ul>
 </section>
 
@@ -123,6 +124,7 @@
     <li><strong>필터</strong> : 전체 / 입금완료 / 입금대기 기준으로 목록을 빠르게 좁힐 수 있습니다.</li>
     <li><strong>입금 토글</strong> : 각 예약의 <strong>입금확인 / 입금대기</strong> 상태를 버튼 하나로 전환할 수 있습니다.</li>
     <li><strong>표시 정보</strong> : 예약번호, 신청자, 동호수, 연락처, 금액, 상태, 입금확인일, 신청일시를 확인합니다.</li>
+    <li><strong>0원 예약 처리</strong> : 이용금액이 0원인 월은 신청 즉시 자동으로 <strong>예약완료</strong> 처리됩니다.</li>
     <li><strong>엑셀 다운로드</strong> : 현재 예약 내역을 엑셀 파일로 내려받을 수 있습니다.</li>
   </ul>
 </section>
@@ -136,7 +138,7 @@
     <a href="{{ url_for('admin.bank_management') }}" class="btn btn-sm btn-outline-primary">은행연동 열기</a>
   </div>
   <ul class="help-step-list">
-    <li><strong>계좌 연동 설정</strong> : 은행 코드, 예금주, 예약금액, 계좌번호, 비밀번호, 생년월일/사업자번호를 저장합니다. 민감 정보는 암호화 저장됩니다.</li>
+    <li><strong>계좌 연동 설정</strong> : 은행 코드, 예금주, 계좌번호, 비밀번호, 생년월일/사업자번호를 저장합니다. 민감 정보는 암호화 저장됩니다.</li>
     <li><strong>즉시 동기화</strong> : 수동 실행 시 02:00~07:00 중지 시간과 관계없이 거래를 즉시 조회합니다.</li>
     <li><strong>자동 매칭 기준</strong> : 금액, 입금자명, 예약 이후 입금 여부를 보고 후보가 1건일 때 자동 연결합니다.</li>
     <li><strong>수동 매칭</strong> : 자동 매칭 실패 건은 후보 목록 또는 예약번호 직접 입력으로 연결할 수 있습니다.</li>
@@ -144,18 +146,20 @@
   </ul>
 </section>
 
-<section id="admin-payment-requests" class="surface-card help-section-card p-4 mb-4">
+<section id="admin-inquiries" class="surface-card help-section-card p-4 mb-4">
   <div class="help-section-header mb-3">
     <div>
       <h2 class="section-title mb-1">6. 문의사항 관리</h2>
       <p class="section-desc mb-0">사용자가 남긴 문의와 관리자 답변을 스레드 형태로 관리합니다.</p>
     </div>
-    <a href="{{ url_for('admin.payment_requests') }}" class="btn btn-sm btn-outline-primary">문의사항 열기</a>
+    <a href="{{ url_for('admin.inquiries') }}" class="btn btn-sm btn-outline-primary">문의사항 열기</a>
   </div>
   <ul class="help-step-list">
     <li><strong>스레드 목록</strong> : 사용자별 요청을 최근 업데이트 순으로 확인합니다.</li>
     <li><strong>상세 열기</strong> : 각 요청 박스를 펼치면 사용자 요청 내용과 기존 답변을 모두 확인할 수 있습니다.</li>
     <li><strong>답변 등록</strong> : 답변 내용을 입력하고 등록하면 해당 스레드에 누적 저장됩니다.</li>
+    <li><strong>문의/답변 수정</strong> : 각 사용자 요청/관리자 답변마다 <strong>수정</strong> 버튼이 있어 모달에서 내용을 바로 고칠 수 있습니다.</li>
+    <li><strong>문의/답변 삭제</strong> : 잘못 등록된 내용은 <strong>삭제</strong> 버튼으로 제거할 수 있습니다. 마지막 메시지까지 삭제하면 해당 문의 스레드 자체도 함께 정리됩니다.</li>
     <li><strong>사용자 확인</strong> : 사용자는 같은 화면의 답변조회 기능으로 관리자 답변을 확인합니다.</li>
   </ul>
 </section>

@@ -54,8 +54,8 @@ def create_app():
             "cleanup completed | "
             f"cutoff={summary['cutoff']} "
             f"reservations_deleted={summary['reservations_deleted']} "
-            f"deposit_requests_deleted={summary['deposit_requests_deleted']} "
-            f"deposit_request_messages_deleted={summary['deposit_request_messages_deleted']} "
+            f"inquiries_deleted={summary['inquiries_deleted']} "
+            f"inquiry_messages_deleted={summary['inquiry_messages_deleted']} "
             f"bank_transactions_deleted={summary.get('bank_transactions_deleted', 0)} "
             f"bank_sync_runs_deleted={summary.get('bank_sync_runs_deleted', 0)}"
         )

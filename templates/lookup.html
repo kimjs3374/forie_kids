@@ -3,7 +3,7 @@
 <div class="app-tabs mb-4">
   <a href="{{ url_for('main.index') }}" class="app-tab">신청하기</a>
   <a href="{{ url_for('main.lookup') }}" class="app-tab is-active">신청조회</a>
-  <a href="{{ url_for('main.payment_request') }}" class="app-tab">문의사항</a>
+  <a href="{{ url_for('main.inquiry') }}" class="app-tab">문의사항</a>
   <a href="{{ url_for('main.password_lookup') }}" class="app-tab">비밀번호</a>
   <a href="{{ url_for('main.help_page') }}" class="app-tab">도움말</a>
 </div>
@@ -16,10 +16,10 @@
       <form method="post">
         {{ form.hidden_tag() }}
         <div class="row g-3">
-          <div class="col-md-6">{{ form.name.label(class='form-label') }}{{ form.name(class='form-control') }}</div>
+          <div class="col-md-6">{{ form.name.label(class='form-label') }}{{ form.name(class='form-control', placeholder='이름을 입력해 주세요.') }}</div>
           <div class="col-md-6">{{ form.phone.label(class='form-label') }}{{ form.phone(class='form-control', placeholder='010-1234-5678', inputmode='numeric') }}</div>
-          <div class="col-md-6">{{ form.apt_dong.label(class='form-label') }}{{ form.apt_dong(class='form-control') }}</div>
-          <div class="col-md-6">{{ form.apt_ho.label(class='form-label') }}{{ form.apt_ho(class='form-control') }}</div>
+          <div class="col-md-6">{{ form.apt_dong.label(class='form-label') }}{{ form.apt_dong(class='form-control', placeholder='동을 입력해 주세요.') }}</div>
+          <div class="col-md-6">{{ form.apt_ho.label(class='form-label') }}{{ form.apt_ho(class='form-control', placeholder='호수를 입력해 주세요.') }}</div>
         </div>
         <div class="mt-4">{{ form.submit(class='btn btn-primary w-100', value='신청조회') }}</div>
       </form>

@@ -87,8 +87,8 @@ def _collect_expired_reservation_ids(cutoff_dt):
     return expired_ids
 
 
-def _collect_expired_deposit_request_ids(cutoff_dt):
-    rows = fetch_rows("deposit_requests", params={"select": "id,created_at,consent_agreed_at"})
+def _collect_expired_inquiry_ids(cutoff_dt):
+    rows = fetch_rows("inquiries", params={"select": "id,created_at,consent_agreed_at"})
     expired_ids = []
     for row in rows:
         retention_base = _parse_timestamp(row.get("consent_agreed_at")) or _parse_timestamp(row.get("created_at"))
@@ -97,19 +97,19 @@ def _collect_expired_deposit_request_ids(cutoff_dt):
     return expired_ids
 
 
-def _collect_expired_deposit_message_ids(cutoff_dt, expired_request_ids):
+def _collect_expired_inquiry_message_ids(cutoff_dt, expired_inquiry_ids):
     message_ids = {
         row["id"]
         for row in fetch_rows(
-            "deposit_request_messages",
+            "inquiry_messages",
             params={"select": "id", "created_at": f"lt.{cutoff_dt.isoformat()}"},
         )
     }
 
-    for chunk in _chunked([str(request_id) for request_id in expired_request_ids]):
+    for chunk in _chunked([str(inquiry_id) for inquiry_id in expired_inquiry_ids]):
         rows = fetch_rows(
-            "deposit_request_messages",
-            params={"select": "id", "request_id": f"in.({','.join(chunk)})"},
+            "inquiry_messages",
+            params={"select": "id", "inquiry_id": f"in.({','.join(chunk)})"},
         )
         message_ids.update(row["id"] for row in rows)
 
@@ -149,8 +149,8 @@ def delete_expired_personal_data(retention_months=None):
         "retention_months": retention_months,
         "cutoff": cutoff_dt.isoformat(),
         "reservations_deleted": 0,
-        "deposit_requests_deleted": 0,
-        "deposit_request_messages_deleted": 0,
+        "inquiries_deleted": 0,
+        "inquiry_messages_deleted": 0,
         "bank_transactions_deleted": 0,
         "bank_sync_runs_deleted": 0,
         "errors": [],
@@ -169,22 +169,22 @@ def delete_expired_personal_data(retention_months=None):
         summary["errors"].append(f"reservations cleanup failed: {exc}")
 
     try:
-        expired_request_ids = _collect_expired_deposit_request_ids(cutoff_dt)
-        expired_message_ids = _collect_expired_deposit_message_ids(cutoff_dt, expired_request_ids)
-        summary["deposit_request_messages_deleted"] = _delete_rows_by_ids(
-            "deposit_request_messages",
+        expired_inquiry_ids = _collect_expired_inquiry_ids(cutoff_dt)
+        expired_message_ids = _collect_expired_inquiry_message_ids(cutoff_dt, expired_inquiry_ids)
+        summary["inquiry_messages_deleted"] = _delete_rows_by_ids(
+            "inquiry_messages",
             expired_message_ids,
         )
-        summary["deposit_requests_deleted"] = _delete_rows_by_ids("deposit_requests", expired_request_ids)
+        summary["inquiries_deleted"] = _delete_rows_by_ids("inquiries", expired_inquiry_ids)
         logger.info(
-            "개인정보 정리 - deposit requests 삭제 완료 | cutoff=%s requests_deleted=%s messages_deleted=%s",
+            "개인정보 정리 - inquiries 삭제 완료 | cutoff=%s inquiries_deleted=%s messages_deleted=%s",
             summary["cutoff"],
-            summary["deposit_requests_deleted"],
-            summary["deposit_request_messages_deleted"],
+            summary["inquiries_deleted"],
+            summary["inquiry_messages_deleted"],
         )
     except Exception as exc:
-        logger.exception("개인정보 정리 - deposit requests 삭제 중 오류가 발생했습니다.")
-        summary["errors"].append(f"deposit requests cleanup failed: {exc}")
+        logger.exception("개인정보 정리 - inquiries 삭제 중 오류가 발생했습니다.")
+        summary["errors"].append(f"inquiries cleanup failed: {exc}")
 
     try:
         expired_bank_transaction_ids = _collect_expired_bank_transaction_ids(cutoff_dt)
@@ -214,10 +214,10 @@ def delete_expired_personal_data(retention_months=None):
         logger.error("개인정보 정리 작업이 일부 실패했습니다. errors=%s", summary["errors"])
     else:
         logger.info(
-            "개인정보 정리 작업 완료 | reservations_deleted=%s deposit_requests_deleted=%s deposit_request_messages_deleted=%s bank_transactions_deleted=%s bank_sync_runs_deleted=%s",
+            "개인정보 정리 작업 완료 | reservations_deleted=%s inquiries_deleted=%s inquiry_messages_deleted=%s bank_transactions_deleted=%s bank_sync_runs_deleted=%s",
             summary["reservations_deleted"],
-            summary["deposit_requests_deleted"],
-            summary["deposit_request_messages_deleted"],
+            summary["inquiries_deleted"],
+            summary["inquiry_messages_deleted"],
             summary["bank_transactions_deleted"],
             summary["bank_sync_runs_deleted"],
         )

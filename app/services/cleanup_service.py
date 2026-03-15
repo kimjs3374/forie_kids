@@ -4,8 +4,8 @@ from .cleanup.personal_data_service import (
     DEFAULT_RETENTION_MONTHS,
     DELETE_BATCH_SIZE,
     _chunked,
-    _collect_expired_deposit_message_ids,
-    _collect_expired_deposit_request_ids,
+    _collect_expired_inquiry_ids,
+    _collect_expired_inquiry_message_ids,
     _collect_expired_reservation_ids,
     _delete_rows_by_ids,
     _logger,
@@ -15,3 +15,7 @@ from .cleanup.personal_data_service import (
     _subtract_months,
     delete_expired_personal_data,
 )
+
+# Backward-compatible aliases
+_collect_expired_deposit_request_ids = _collect_expired_inquiry_ids
+_collect_expired_deposit_message_ids = _collect_expired_inquiry_message_ids

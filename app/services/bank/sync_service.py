@@ -9,6 +9,7 @@ from .settings_service import get_active_bank_setting, update_bank_setting
 
 SYNC_PAUSE_START_HOUR = 2
 SYNC_PAUSE_END_HOUR = 7
+MAX_RECORDED_DEPOSIT_AMOUNT = 30000
 
 
 def is_bank_sync_window_open(now=None):
@@ -57,6 +58,16 @@ def _transaction_exists(transaction_uid):
     return bool(fetch_rows("bank_transactions", params={"select": "id", "transaction_uid": f"eq.{transaction_uid}"}))
 
 
+def _should_store_transaction(transaction_type, amount):
+    normalized_type = str(transaction_type or "").lower()
+    normalized_amount = int(amount or 0)
+
+    if normalized_type != "deposit":
+        return False
+
+    return normalized_amount <= MAX_RECORDED_DEPOSIT_AMOUNT
+
+
 def _ingest_transactions(setting, raw_transactions):
     inserted_ids = []
     latest_seen_at = parse_iso_datetime(setting.get("sync_cursor_at"))
@@ -76,6 +87,10 @@ def _ingest_transactions(setting, raw_transactions):
             continue
 
         transaction_type = str(item.get("type") or "").lower()
+        amount = int(item.get("amount") or 0)
+        if not _should_store_transaction(transaction_type, amount):
+            continue
+
         deposit_name = extract_deposit_name(item)
         rows = insert_row(
             "bank_transactions",
@@ -84,14 +99,14 @@ def _ingest_transactions(setting, raw_transactions):
                 "bank_code": setting.get("bank_code"),
                 "transaction_uid": transaction_uid,
                 "deposit_name": deposit_name or "",
-                "amount": int(item.get("amount") or 0),
+                "amount": amount,
                 "transaction_date": transaction_date,
                 "description": item.get("description") or None,
                 "display_name": item.get("displayName") or None,
                 "counterparty": item.get("counterparty") or None,
                 "balance": int(item.get("balance") or 0),
                 "transaction_type": transaction_type,
-                "status": "PENDING" if transaction_type == "deposit" else "IGNORED",
+                "status": "PENDING",
                 "raw_json": item,
             },
         )

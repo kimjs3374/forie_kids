@@ -1,6 +1,5 @@
 from datetime import datetime
 
-from ..bank.settings_service import get_configured_payment_amount
 from ..shared import KST, format_date_display, is_month_open, month_status_label, parse_iso_date
 from ..supabase_service import fetch_rows
 
@@ -34,10 +33,9 @@ def get_months_with_slots():
         slot_map.setdefault(slot["month_id"], []).append(slot)
 
     today_kst = datetime.now(KST).date()
-    configured_payment_amount = get_configured_payment_amount()
     for month in months:
         month["slots"] = slot_map.get(month["id"], [])
-        month["payment_amount"] = configured_payment_amount
+        month["payment_amount"] = int(month.get("payment_amount") if month.get("payment_amount") not in (None, "") else 5000)
         month["status_label"] = month_status_label(month)
         month["is_open"] = is_month_open(month)
         month["status_variant"] = {

@@ -2,7 +2,6 @@ from datetime import date, datetime, time, timezone
 
 from ..shared import month_status_label
 from ..supabase_service import delete_rows, fetch_rows, insert_row, patch_rows
-from ..bank.settings_service import get_configured_payment_amount
 from .password_service import (
     DEFAULT_MONTH_CAPACITY,
     _allocate_unique_month_password,
@@ -30,7 +29,7 @@ def _create_month_record(
     title=None,
 ):
     if payment_amount in (None, ""):
-        payment_amount = get_configured_payment_amount()
+        payment_amount = 5000
     target_month = f"{target_year}-{target_month_num:02d}"
     existing_month = fetch_rows("reservation_months", params={"select": "id,target_month", "target_month": f"eq.{target_month}"})
     if existing_month:
@@ -55,7 +54,7 @@ def _create_month_record(
             "title": final_title,
             "open_at": open_at.isoformat(),
             "close_at": close_at.isoformat(),
-            "payment_amount": int(payment_amount or 0),
+            "payment_amount": int(payment_amount if payment_amount not in (None, "") else 5000),
             "max_reservations_per_household": 1,
         },
     )
@@ -94,7 +93,7 @@ def ensure_next_month_reservation(today=None):
         open_date=date(now_kst.year, now_kst.month, 20),
         close_date=date(target_year, target_month_num, 15),
         capacity=DEFAULT_MONTH_CAPACITY,
-        payment_amount=get_configured_payment_amount(),
+        payment_amount=5000,
     )
     return created
 
@@ -106,7 +105,7 @@ def create_month(form):
         open_date=form.open_date.data,
         close_date=form.close_date.data,
         capacity=form.capacity.data,
-        payment_amount=get_configured_payment_amount(),
+        payment_amount=form.payment_amount.data,
         title=form.title.data,
     )
 
@@ -171,7 +170,7 @@ def update_month(month_id, form):
             "title": form.title.data.strip() if form.title.data else None,
             "open_at": open_at.isoformat(),
             "close_at": close_at.isoformat(),
-            "payment_amount": get_configured_payment_amount(),
+            "payment_amount": int(form.payment_amount.data if form.payment_amount.data not in (None, "") else 5000),
         },
         params={"id": f"eq.{month_id}"},
     )

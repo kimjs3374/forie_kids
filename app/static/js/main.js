@@ -188,6 +188,69 @@
     });
   };
 
+  const initCopyButtons = (root = document) => {
+    root.querySelectorAll('.js-copy-account-number').forEach((button) => {
+      if (button.dataset.bound === 'true') return;
+      button.dataset.bound = 'true';
+
+      button.addEventListener('click', async () => {
+        const accountNumber = (button.dataset.accountNumber || '').replace(/\D/g, '');
+        const input = button.closest('.input-group')?.querySelector('.js-copy-account-number-input');
+        if (!accountNumber) {
+          showToast('복사할 계좌번호가 없습니다.', 'warning');
+          return;
+        }
+
+        if (input) {
+          input.focus();
+          input.removeAttribute('readonly');
+          input.select();
+          input.setSelectionRange(0, input.value.length);
+          input.setAttribute('readonly', 'readonly');
+        }
+
+        try {
+          if (window.isSecureContext && navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(accountNumber);
+          } else {
+            const tempInput = document.createElement('textarea');
+            tempInput.value = accountNumber;
+            tempInput.setAttribute('readonly', '');
+            tempInput.setAttribute('aria-hidden', 'true');
+            tempInput.style.position = 'fixed';
+            tempInput.style.top = '0';
+            tempInput.style.left = '0';
+            tempInput.style.width = '1px';
+            tempInput.style.height = '1px';
+            tempInput.style.padding = '0';
+            tempInput.style.border = '0';
+            tempInput.style.opacity = '0';
+            tempInput.style.pointerEvents = 'none';
+            document.body.appendChild(tempInput);
+            tempInput.focus();
+            tempInput.select();
+            tempInput.setSelectionRange(0, tempInput.value.length);
+
+            const copied = document.execCommand('copy');
+            tempInput.remove();
+
+            if (!copied) {
+              throw new Error('execCommand copy failed');
+            }
+          }
+          showToast('계좌번호가 복사되었습니다.', 'success');
+        } catch (error) {
+          if (input) {
+            input.focus();
+            input.select();
+            input.setSelectionRange(0, input.value.length);
+          }
+          showToast('자동 복사가 어려우면 숫자를 길게 눌러 복사해주세요.', 'warning');
+        }
+      });
+    });
+  };
+
   const initMonthSelection = (root = document) => {
     const monthChips = root.querySelectorAll('.js-month-chip');
     if (!monthChips.length) return;
@@ -465,6 +528,7 @@
     initInlineConsentPanels(root);
     initPaymentRequestConsentModal(root);
     initPasswordForms(root);
+    initCopyButtons(root);
     initMonthSelection(root);
     showFlashesAsToasts(root);
   };

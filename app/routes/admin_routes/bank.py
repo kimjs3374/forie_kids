@@ -37,7 +37,6 @@ def bank_management():
     if setting:
         settings_form.bank_code.data = setting.get("bank_code") or settings_form.bank_code.data
         settings_form.account_holder_name.data = setting.get("account_holder_name") or ""
-        settings_form.payment_amount.data = int(setting.get("payment_amount") or 5000)
         settings_form.is_active.data = bool(setting.get("is_active"))
 
     status_filter = request.args.get("status", "all").strip().lower()

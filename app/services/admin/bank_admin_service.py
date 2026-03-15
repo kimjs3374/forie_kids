@@ -75,7 +75,6 @@ def save_bank_settings(form):
         account_number=form.account_number.data,
         account_password=form.account_password.data,
         resident_number=form.resident_number.data,
-        payment_amount=form.payment_amount.data,
         is_active=bool(form.is_active.data),
     )
 
@@ -331,13 +330,10 @@ def get_bank_dashboard_summary():
         summary["is_enabled"] = bool(setting.get("is_active"))
         summary["last_synced_at_display"] = format_kst_datetime(setting.get("last_synced_at"))
         summary["last_error_message"] = setting.get("last_error_message") or ""
-        summary["payment_amount_display"] = f"{int(setting.get('payment_amount') or 0):,}원"
         running_run = get_running_sync_run(setting.get("id"))
         if running_run:
             summary["is_sync_running"] = True
             summary["running_sync_started_at_display"] = format_kst_datetime(running_run.get("started_at"))
-    else:
-        summary["payment_amount_display"] = "5,000원"
 
     summary["total_transactions"] = _safe_count_rows("bank_transactions")
     summary["pending_count"] = _safe_count_rows("bank_transactions", params={"status": "eq.PENDING"})

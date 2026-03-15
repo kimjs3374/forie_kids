@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block title %}문의사항 관리{% endblock %}
+{% block content %}
+<div class="surface-card p-4">
+    <h1 class="section-title mb-1">문의사항 관리</h1>
+    <p class="section-desc">사용자가 남긴 문의사항과 관리자 답변을 게시판처럼 누적 관리합니다.</p>
+  </div>
+  {% if threads %}
+    {% for thread in threads|sort(attribute='latest_message_at', reverse=True) %}
+    {% set current_open_thread = open_thread_id if open_thread_id is defined and open_thread_id else request.args.get('open_thread') %}
+    {% set is_open = current_open_thread == (thread.id|string) %}
+    <div class="request-thread mb-4">
+      <button class="request-thread-header request-thread-toggle mb-0 w-100 text-start" type="button" data-bs-toggle="collapse" data-bs-target="#inquiry-thread-{{ thread.id }}" aria-expanded="{{ 'true' if is_open else 'false' }}" aria-controls="inquiry-thread-{{ thread.id }}">
+        <div>
+          <div class="fw-bold">{{ thread.apt_dong }}동 {{ thread.apt_ho }}호 / {{ thread.name }} / {{ thread.phone }}</div>
+          <div class="small text-muted">최근 업데이트: {{ thread.latest_message_at_display or '-' }}</div>
+        </div>
+        <span class="status-badge status-{{ thread.status|lower }}">{{ thread.status_label }}</span>
+      </button>
+      <div class="collapse mt-3 {% if is_open %}show{% endif %}" id="inquiry-thread-{{ thread.id }}">
+        <form method="post" action="{{ url_for('admin.reply_inquiry') }}" class="request-reply-form mb-3">
+          {{ reply_form.csrf_token }}
+          <input type="hidden" name="thread_id" value="{{ thread.id }}">
+          <div class="d-flex gap-2 align-items-start">
+            <textarea name="content" class="form-control flex-grow-1" rows="2" placeholder="답변 내용을 입력하세요." required style="min-height: 64px;"></textarea>
+            <button class="btn btn-sm btn-primary" type="submit" style ="width:10%; min-height: 64px;">답변 등록</button>
+          </div>
+        </form>
+        {% for message in thread.messages|sort(attribute='created_at', reverse=True) %}
+        <div class="request-message {{ 'is-admin' if message.author_type == 'ADMIN' else 'is-user' }}">
+          <div class="request-message-meta">
+            <strong>{{ '관리자 답변' if message.author_type == 'ADMIN' else '사용자 요청' }}</strong>
+            <span>{{ message.created_at_display or '-' }}</span>
+          </div>
+          <div>{{ message.content|replace('\n', '<br>')|safe }}</div>
+          <div class="d-flex gap-2 mt-2 justify-content-end">
+            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#editInquiryMessageModal-{{ message.id }}">수정</button>
+            <form method="post" action="{{ url_for('admin.delete_inquiry_message_route') }}" onsubmit="return confirm('해당 문의/답변을 삭제하시겠습니까?');">
+              {{ edit_form.csrf_token }}
+              <input type="hidden" name="thread_id" value="{{ thread.id }}">
+              <input type="hidden" name="message_id" value="{{ message.id }}">
+              <button class="btn btn-sm btn-outline-danger" type="submit">삭제</button>
+            </form>
+          </div>
+        </div>
+
+        <div class="modal fade" id="editInquiryMessageModal-{{ message.id }}" tabindex="-1" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content surface-card border-0">
+              <div class="modal-header border-0 pb-2">
+                <h5 class="modal-title fw-bold">문의/답변 수정</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+              </div>
+              <div class="modal-body pt-0">
+                <form method="post" action="{{ url_for('admin.edit_inquiry_message') }}">
+                  {{ edit_form.csrf_token }}
+                  <input type="hidden" name="thread_id" value="{{ thread.id }}">
+                  <input type="hidden" name="message_id" value="{{ message.id }}">
+                  <div class="mb-3 small text-muted">
+                    {{ '관리자 답변' if message.author_type == 'ADMIN' else '사용자 요청' }} / {{ message.created_at_display or '-' }}
+                  </div>
+                  <div class="mb-3">
+                    <textarea name="content" class="form-control" rows="6" required>{{ message.content }}</textarea>
+                  </div>
+                  <button class="btn btn-primary w-100" type="submit">수정 저장</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  {% else %}
+  <div class="text-muted">접수된 문의사항이 없습니다.</div>
+  {% endif %}
+</div>
+{% endblock %}

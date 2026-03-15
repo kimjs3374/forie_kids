@@ -3,7 +3,7 @@
 <div class="app-tabs mb-4">
   <a href="{{ url_for('main.index') }}" class="app-tab">신청하기</a>
   <a href="{{ url_for('main.lookup') }}" class="app-tab">신청조회</a>
-  <a href="{{ url_for('main.payment_request') }}" class="app-tab is-active">문의사항</a>
+  <a href="{{ url_for('main.inquiry') }}" class="app-tab is-active">문의사항</a>
   <a href="{{ url_for('main.password_lookup') }}" class="app-tab">비밀번호</a>
   <a href="{{ url_for('main.help_page') }}" class="app-tab">도움말</a>
 </div>
@@ -16,11 +16,11 @@
       <form method="post">
         {{ form.hidden_tag() }}
         <div class="row g-3">
-          <div class="col-md-6">{{ form.name.label(class='form-label') }}{{ form.name(class='form-control') }}</div>
+          <div class="col-md-6">{{ form.name.label(class='form-label') }}{{ form.name(class='form-control', placeholder='이름을 입력해 주세요.') }}</div>
           <div class="col-md-6">{{ form.phone.label(class='form-label') }}{{ form.phone(class='form-control', placeholder='010-1234-5678', inputmode='numeric') }}</div>
-          <div class="col-md-6">{{ form.apt_dong.label(class='form-label') }}{{ form.apt_dong(class='form-control') }}</div>
-          <div class="col-md-6">{{ form.apt_ho.label(class='form-label') }}{{ form.apt_ho(class='form-control') }}</div>
-          <div class="col-12">{{ form.content.label(class='form-label') }}{{ form.content(class='form-control', rows='5', placeholder='입금 날짜, 입금자명, 요청 내용을 적어주세요.') }}</div>
+          <div class="col-md-6">{{ form.apt_dong.label(class='form-label') }}{{ form.apt_dong(class='form-control', placeholder='동을 입력해 주세요.') }}</div>
+          <div class="col-md-6">{{ form.apt_ho.label(class='form-label') }}{{ form.apt_ho(class='form-control', placeholder='호수를 입력해 주세요.') }}</div>
+          <div class="col-12">{{ form.content.label(class='form-label') }}{{ form.content(class='form-control', rows='5', placeholder='문의사항을 입력해주시면 담당자가 확인해서 빠른 시간내 답변드리겠습니다.') }}</div>
         </div>
         <div class="consent-panel mt-3 mb-3">
           {{ form.consent_agreed(class='form-check-input d-none js-consent-checkbox') }}
@@ -29,7 +29,7 @@
               <div class="fw-bold small">개인정보 수집 및 이용 동의</div>
               <div class="small text-muted js-consent-status">상세 내용을 확인하고 동의해주세요.</div>
             </div>
-            <button type="button" class="btn btn-sm btn-outline-primary js-open-consent-modal" data-bs-toggle="modal" data-bs-target="#privacyConsentModal" data-consent-target="payment-request">동의하기</button>
+            <button type="button" class="btn btn-sm btn-outline-primary js-open-consent-modal" data-bs-toggle="modal" data-bs-target="#privacyConsentModal" data-consent-target="inquiry">동의하기</button>
           </div>
         </div>
         <div class="mt-4 d-grid gap-2 d-md-flex">
@@ -77,13 +77,13 @@
     <div class="modal-content surface-card border-0">
       <div class="modal-header border-0 pb-0">
         <h5 class="modal-title fw-bold">동/호수 입력 오류</h5>
-        <a href="{{ url_for('main.payment_request') }}" class="btn-close"></a>
+        <a href="{{ url_for('main.inquiry') }}" class="btn-close"></a>
       </div>
       <div class="modal-body">
         <p class="mb-0">{{ apt_validation_error }}</p>
       </div>
       <div class="modal-footer border-0">
-        <a href="{{ url_for('main.payment_request') }}" class="btn btn-primary">확인</a>
+        <a href="{{ url_for('main.inquiry') }}" class="btn btn-primary">확인</a>
       </div>
     </div>
   </div>
